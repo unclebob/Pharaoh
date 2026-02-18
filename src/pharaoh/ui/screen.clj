@@ -151,6 +151,15 @@
       (pyr/draw-pyramid x y w h (:py-base s) (:py-stones s)))
 
     ;; === Contracts (cols 3-9, rows 12-22) ===
+    ;; Offers button (right end of contracts header row)
+    (let [{:keys [x y w h]} (lay/cell-rect-span 8 11 1 1)]
+      (q/fill 180 200 255)
+      (q/stroke 100 120 180)
+      (q/rect x y w h 3)
+      (q/fill 0)
+      (q/text-size lay/label-size)
+      (q/text "Offers(c)" (+ x 3) (+ y lay/label-size 2)))
+
     (let [pend (:cont-pend s)]
       (doseq [i (range (min 10 (count pend)))]
         (let [c (nth pend i)

@@ -67,31 +67,98 @@
 
 (defn- draw-dialog [state icons]
   (when-let [d (:dialog state)]
-    (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
-          key-hint (dialog-shortcut d)
-          title (str (name (:type d))
-                     (when (:commodity d) (str " " (name (:commodity d))))
-                     (when key-hint (str " (" key-hint ")"))
-                     (when (:mode d) (str " [" (name (:mode d)) "]")))
-          icon (get icons (:type d))
-          icon-size (int (* h 0.4))
-          text-x (if icon (+ x icon-size 16) (+ x 8))]
-      (q/fill 245 245 255)
-      (q/stroke 100)
-      (q/stroke-weight 2)
-      (q/rect x y w h 5)
-      (q/stroke-weight 1)
-      (when icon
-        (q/image icon (+ x 8) (+ y 8) icon-size icon-size))
-      (q/fill 0)
-      (q/text-size lay/title-size)
-      (q/text title text-x (+ y lay/title-size 8))
-      (q/fill 0)
-      (q/text-size lay/value-size)
-      (q/text (str "Amount: " (:input d)) text-x (+ y (* lay/value-size 3) 8))
-      (q/text-size lay/small-size)
-      (q/fill 100)
-      (q/text (dialog-help d) text-x (+ y (* lay/value-size 5) 8)))))
+    (when (not= :contracts (:type d))
+      (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
+            key-hint (dialog-shortcut d)
+            title (str (name (:type d))
+                       (when (:commodity d) (str " " (name (:commodity d))))
+                       (when key-hint (str " (" key-hint ")"))
+                       (when (:mode d) (str " [" (name (:mode d)) "]")))
+            icon (get icons (:type d))
+            icon-size (int (* h 0.4))
+            text-x (if icon (+ x icon-size 16) (+ x 8))]
+        (q/fill 245 245 255)
+        (q/stroke 100)
+        (q/stroke-weight 2)
+        (q/rect x y w h 5)
+        (q/stroke-weight 1)
+        (when icon
+          (q/image icon (+ x 8) (+ y 8) icon-size icon-size))
+        (q/fill 0)
+        (q/text-size lay/title-size)
+        (q/text title text-x (+ y lay/title-size 8))
+        (q/fill 0)
+        (q/text-size lay/value-size)
+        (q/text (str "Amount: " (:input d)) text-x (+ y (* lay/value-size 3) 8))
+        (q/text-size lay/small-size)
+        (q/fill 100)
+        (q/text (dialog-help d) text-x (+ y (* lay/value-size 5) 8))))))
+
+(defn- fmt-offer [offer players]
+  (let [name (get-in players [(:who offer) :name] "?")
+        verb (if (= :buy (:type offer)) "BUY" "SELL")]
+    (format "%s: %s %.0f %s @ %.1fg %dmo"
+            name verb (:amount offer)
+            (clojure.core/name (:what offer))
+            (:price offer) (:duration offer))))
+
+(defn- fmt-confirm [offer players]
+  (let [name (get-in players [(:who offer) :name] "?")
+        verb (if (= :buy (:type offer)) "sell" "buy")
+        dir (if (= :buy (:type offer)) "to" "from")]
+    (format "Will you %s %.0f %s %s %s for %.0f gold in %d months?"
+            verb (:amount offer)
+            (clojure.core/name (:what offer))
+            dir name (:price offer) (:duration offer))))
+
+(defn- draw-offer-list [d x y w players]
+  (let [offers (:active-offers d)
+        selected (:selected d)
+        row-h (+ lay/label-size 4)
+        y0 (+ y (* lay/title-size 2) lay/small-size 8)]
+    (q/text-size lay/small-size)
+    (q/fill 100)
+    (q/text "Up/Down=navigate  Enter=select  Esc=close"
+            (+ x 8) (+ y lay/title-size lay/small-size 12))
+    (doseq [i (range (count offers))]
+      (let [oy (+ y0 (* i row-h))
+            text (fmt-offer (nth offers i) players)]
+        (when (= i selected)
+          (q/fill 200 210 255)
+          (q/no-stroke)
+          (q/rect (+ x 4) (- oy 2) (- w 8) row-h 2)
+          (q/stroke 100))
+        (q/fill 0)
+        (q/text-size lay/label-size)
+        (q/text text (+ x 8) (+ oy lay/label-size))))))
+
+(defn- draw-confirm-prompt [d x y w h players]
+  (let [offer (nth (:active-offers d) (:selected d))
+        text (fmt-confirm offer players)]
+    (q/fill 0)
+    (q/text-size lay/value-size)
+    (q/text-leading (* lay/value-size 1.3))
+    (q/text text (+ x 8) (+ y (* lay/title-size 3)) (- w 16) (- h 60))
+    (q/fill 100)
+    (q/text-size lay/small-size)
+    (q/text "y=accept  n=reject  Esc=back" (+ x 8) (+ y h -20))))
+
+(defn- draw-contracts-dialog [state]
+  (when-let [d (:dialog state)]
+    (when (= :contracts (:type d))
+      (let [{:keys [x y w h]} (lay/cell-rect-span 2 5 7 14)
+            players (:players state)]
+        (q/fill 245 245 255)
+        (q/stroke 100)
+        (q/stroke-weight 2)
+        (q/rect x y w h 5)
+        (q/stroke-weight 1)
+        (q/fill 0)
+        (q/text-size lay/title-size)
+        (q/text "Contract Offers (c)" (+ x 8) (+ y lay/title-size 8))
+        (if (= :confirming (:mode d))
+          (draw-confirm-prompt d x y w h players)
+          (draw-offer-list d x y w players))))))
 
 (defn- draw-face-message [msg faces]
   (let [text (:text msg)
@@ -167,6 +234,7 @@
     (do
       (scr/draw-screen state)
       (draw-dialog state icons)
+      (draw-contracts-dialog state)
       (when-let [msg (:message state)]
         (when (map? msg) (draw-face-message msg faces))))))
 
