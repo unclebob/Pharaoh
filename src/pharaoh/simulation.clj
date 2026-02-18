@@ -149,7 +149,9 @@
     state))
 
 (defn- process-contracts [state rng]
-  (ct/contract-progress rng state))
+  (->> state
+       (ct/contract-progress rng)
+       (ct/new-offers rng)))
 
 (defn- update-net-worth [state]
   (let [nw (ec/net-worth state)

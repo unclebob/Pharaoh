@@ -119,6 +119,15 @@
     (is (map? result))
     (is (contains? result :gold))))
 
+(deftest run-month-refreshes-contract-offers
+  (let [rng (r/make-rng 42)
+        players (ct/make-players (r/make-rng 1))
+        state (assoc (st/initial-state)
+                :players players :cont-offers []
+                :gold 50000.0 :slaves 100.0 :wheat 100.0)
+        result (sim/run-month rng state)]
+    (is (= 15 (count (:cont-offers result))))))
+
 (deftest multi-month-simulation
   (let [state (game-state)]
     (loop [s state n 0]
