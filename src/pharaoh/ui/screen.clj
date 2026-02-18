@@ -4,6 +4,10 @@
             [pharaoh.ui.pyramid-render :as pyr]
             [pharaoh.state :as st]))
 
+(def ^:private month-names
+  ["" "Jan" "Feb" "Mar" "Apr" "May" "Jun"
+   "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"])
+
 (defn- fmt [x] (format "%.0f" (double x)))
 (defn- fmt1 [x] (format "%.1f" (double x)))
 (defn- delta-pct [cur old]
@@ -107,7 +111,7 @@
 
     ;; === Date (cols 8-9, rows 1-2) ===
     (draw-label 8 1 "Year")  (draw-val 9 1 (str (:year s)))
-    (draw-label 8 2 "Month") (draw-val 9 2 (str (:month s)))
+    (draw-label 8 2 "Month") (draw-val 9 2 (month-names (:month s)))
 
     ;; === Overseers (cols 6-7, rows 5-7) ===
     (draw-label 6 5 "O'seers (g)") (draw-val 7 5 (fmt (:overseers s)))
@@ -176,7 +180,7 @@
     (let [{:keys [x y w]} (lay/cell-rect-span 3 23 4 1)]
       (q/fill 100)
       (q/text-size lay/small-size)
-      (q/text (str "Yr " (:year s) " Mo " (:month s))
+      (q/text (str "Yr " (:year s) " " (month-names (:month s)))
               (+ x 4) (+ y lay/small-size 4)))
 
     ;; Message bar (row 24) — plain string messages only
