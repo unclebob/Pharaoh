@@ -1,5 +1,6 @@
 (ns pharaoh.overseers
-  (:require [pharaoh.random :as r]))
+  (:require [pharaoh.messages :as msg]
+            [pharaoh.random :as r]))
 
 (defn hire [state n]
   (update state :overseers + n))
@@ -19,7 +20,8 @@
     (+ (:ov-press state) ov-stress (- ov-relax))))
 
 (defn overseers-quit [rng state]
-  (let [raise-pct (r/gaussian rng 20.0 2.0)]
+  (let [raise-pct (r/gaussian rng 20.0 2.0)
+        text (format (msg/pick rng msg/missed-payroll-messages) raise-pct)]
     (-> state
-      (assoc :overseers 0)
+      (assoc :overseers 0 :message text)
       (update :ov-pay + (* (:ov-pay state) (/ raise-pct 100))))))

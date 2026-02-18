@@ -31,6 +31,46 @@
   (is (= :gold-event (ev/event-type 75)))
   (is (= :economy-event (ev/event-type 85))))
 
+(deftest event-type-boundary-thresholds
+  ;; Exact boundary transitions
+  (is (= :locusts (ev/event-type 0)))
+  (is (= :locusts (ev/event-type 1)))
+  (is (= :plagues (ev/event-type 2)))
+  (is (= :plagues (ev/event-type 5)))
+  (is (= :acts-of-god (ev/event-type 6)))
+  (is (= :acts-of-god (ev/event-type 7)))
+  (is (= :acts-of-mobs (ev/event-type 8)))
+  (is (= :acts-of-mobs (ev/event-type 19)))
+  (is (= :war (ev/event-type 20)))
+  (is (= :revolt (ev/event-type 21)))
+  (is (= :revolt (ev/event-type 29)))
+  (is (= :workload (ev/event-type 30)))
+  (is (= :workload (ev/event-type 44)))
+  (is (= :health-events (ev/event-type 45)))
+  (is (= :health-events (ev/event-type 59)))
+  (is (= :labor-event (ev/event-type 60)))
+  (is (= :labor-event (ev/event-type 64)))
+  (is (= :wheat-event (ev/event-type 65)))
+  (is (= :wheat-event (ev/event-type 74)))
+  (is (= :gold-event (ev/event-type 75)))
+  (is (= :gold-event (ev/event-type 84)))
+  (is (= :economy-event (ev/event-type 85)))
+  (is (= :economy-event (ev/event-type 99))))
+
+(deftest event-message-generates-strings
+  (let [rng (r/make-rng 42)]
+    (doseq [etype [:acts-of-god :acts-of-mobs :plagues :locusts
+                    :health-events :economy-event]]
+      (is (string? (ev/event-message rng etype nil))
+          (str "event-message for " etype)))
+    (is (string? (ev/event-message rng :workload 500.0)))
+    (is (string? (ev/event-message rng :labor-event 20)))
+    (is (string? (ev/event-message rng :wheat-event 30)))
+    (is (string? (ev/event-message rng :gold-event 35)))
+    (is (string? (ev/event-message rng :revolt 25)))
+    (is (string? (ev/event-message rng :war 1.5)))
+    (is (string? (ev/event-message rng :war 0.5)))))
+
 (deftest locusts-destroy-crops
   (let [rng (r/make-rng 42)
         state (state-with {:ln-fallow 50.0 :ln-sewn 30.0 :ln-grown 20.0

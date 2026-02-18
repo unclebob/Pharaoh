@@ -1,5 +1,6 @@
 (ns pharaoh.events
-  (:require [pharaoh.random :as r]
+  (:require [pharaoh.messages :as msg]
+            [pharaoh.random :as r]
             [pharaoh.state :as st]
             [pharaoh.tables :as t]
             [pharaoh.util :as u]))
@@ -171,6 +172,48 @@
    :workload       workload-event :health-events health-event
    :labor-event    labor-event    :wheat-event   wheat-event
    :gold-event     gold-event     :economy-event economy-event})
+
+(defn- aog-message [rng]
+  (format (msg/pick rng msg/aog-templates)
+          (msg/pick rng msg/aog-adjectives)
+          (msg/pick rng msg/aog-disasters)
+          (msg/pick rng msg/aog-consequences)))
+
+(defn- aom-message [rng]
+  (format (msg/pick rng msg/aom-templates)
+          (msg/pick rng msg/aom-crowds)
+          (msg/pick rng msg/aom-populations)
+          (msg/pick rng msg/aom-motivations)
+          (msg/pick rng msg/aom-actions)))
+
+(defn- plague-message [rng]
+  (format (msg/pick rng msg/plague-templates)
+          (msg/pick rng msg/plague-diseases)))
+
+(defn- pct-message [rng pool pct]
+  (format (msg/pick rng pool) (long pct)))
+
+(defn- war-message [rng gain]
+  (let [pct (long (Math/abs (* (- gain 1.0) 100)))
+        pool (if (>= gain 1.0) msg/war-win-messages msg/war-lose-messages)]
+    (str (msg/pick rng pool) (format " %d%%." pct))))
+
+(defn event-message [rng etype extra]
+  (case etype
+    :acts-of-god   (aog-message rng)
+    :acts-of-mobs  (aom-message rng)
+    :plagues       (plague-message rng)
+    :locusts       (msg/pick rng (get msg/event-messages :locusts))
+    :health-events (msg/pick rng (get msg/event-messages :health))
+    :workload      (let [hrs (format "%.0f man-hours" (or extra 0.0))]
+                     (format (msg/pick rng (get msg/event-messages :workload)) hrs))
+    :labor-event   (pct-message rng (get msg/event-messages :labor) (or extra 20))
+    :wheat-event   (pct-message rng (get msg/event-messages :wheat) (or extra 30))
+    :gold-event    (pct-message rng (get msg/event-messages :gold) (or extra 35))
+    :economy-event (msg/pick rng (get msg/event-messages :economy))
+    :revolt        (pct-message rng msg/revolt-messages (or extra 0))
+    :war           (war-message rng (or extra 1.0))
+    nil))
 
 (defn random-event [rng state]
   (let [roll (long (r/uniform rng 0.0 100.0))

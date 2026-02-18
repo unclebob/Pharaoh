@@ -20,10 +20,27 @@
   (is (pos? (count msg/chat-messages)))
   (is (pos? (count msg/dunning-messages)))
   (is (pos? (count msg/win-messages)))
+  (is (pos? (count msg/farewell-messages)))
   (is (pos? (count msg/game-over-messages)))
   (is (pos? (count msg/opening-messages)))
   (is (pos? (count msg/cash-shortage-messages)))
-  (is (pos? (count msg/foreclosure-messages))))
+  (is (pos? (count msg/foreclosure-messages)))
+  (is (pos? (count msg/foreclosure-warning-messages)))
+  (is (pos? (count msg/bankruptcy-messages)))
+  (is (pos? (count msg/repayment-signoff-messages)))
+  (is (pos? (count msg/demand-limit-messages)))
+  (is (pos? (count msg/transaction-success-messages)))
+  (is (pos? (count msg/selling-more-messages)))
+  (is (pos? (count msg/contract-insufficient-goods-messages)))
+  (is (pos? (count msg/contract-insufficient-funds-messages)))
+  (is (pos? (count msg/buy-complete-messages)))
+  (is (pos? (count msg/missed-payroll-messages)))
+  (is (pos? (count msg/player-names)))
+  (is (pos? (count msg/quit-save-messages)))
+  (is (pos? (count msg/plague-diseases)))
+  (is (pos? (count msg/plague-templates)))
+  (is (pos? (count msg/aog-templates)))
+  (is (pos? (count msg/aom-templates))))
 
 (deftest advice-messages-cover-all-topics
   (let [expected-keys #{:good-ox-feed :bad-ox-feed :good-hs-feed :bad-hs-feed
@@ -36,7 +53,7 @@
       (is (pos? (count pool))))))
 
 (deftest event-messages-cover-all-types
-  (doseq [k [:locusts :plagues :health :workload :labor :wheat :gold :economy]]
+  (doseq [k [:locusts :health :workload :labor :wheat :gold :economy]]
     (is (pos? (count (get msg/event-messages k))))))
 
 (deftest word-pools-non-empty
@@ -48,3 +65,13 @@
   (is (pos? (count msg/aom-actions)))
   (is (pos? (count msg/war-attackers)))
   (is (pos? (count msg/revolt-messages))))
+
+(deftest input-error-messages-cover-all-categories
+  (doseq [k [:buysell-invalid :buysell-no-function :buysell-negative
+              :loan-invalid :loan-no-function :loan-insufficient
+              :overseer-no-function :overseer-fractional :overseer-too-many
+              :planting-invalid :planting-negative
+              :pyramid-invalid :pyramid-negative :negative-stones
+              :manure-invalid :manure-negative :feed-invalid :generic-numeric]]
+    (is (pos? (count (get msg/input-error-messages k)))
+        (str "Missing category: " k))))

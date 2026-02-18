@@ -252,3 +252,33 @@ Feature: Neighbors
     And the idle timer has expired
     When visits are checked
     Then the existing message is preserved
+
+  # -----------------------------------------------------------
+  # Timer Interval Ranges
+  # -----------------------------------------------------------
+
+  Scenario: Idle timer interval is 60-90 seconds
+    Given a random number generator is initialized
+    When the idle interval is calculated 100 times
+    Then every interval is between 60 and 90 seconds
+
+  Scenario: Chat timer interval is 90-200 seconds
+    Given a random number generator is initialized
+    When the chat interval is calculated 100 times
+    Then every interval is between 90 and 200 seconds
+
+  Scenario: Dunning interval depends on credit rating
+    Given the credit rating is 0.0
+    Then the dunning interval is approximately 5 seconds
+    Given the credit rating is 0.5
+    Then the dunning interval is approximately 30 seconds
+    Given the credit rating is 1.0
+    Then the dunning interval is approximately 300 seconds
+
+  Scenario: Low credit rating causes frequent dunning
+    Given the credit rating is 0.1
+    Then the dunning interval is less than 10 seconds
+
+  Scenario: High credit rating causes rare dunning
+    Given the credit rating is 0.9
+    Then the dunning interval is greater than 90 seconds

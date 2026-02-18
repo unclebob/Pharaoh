@@ -1,5 +1,6 @@
 (ns pharaoh.contracts
-  (:require [pharaoh.random :as r]
+  (:require [pharaoh.messages :as msg]
+            [pharaoh.random :as r]
             [pharaoh.state :as st]))
 
 (def max-offers 15)
@@ -9,10 +10,12 @@
 (def commodities [:wheat :slaves :oxen :horses :manure :land])
 
 (defn make-players [rng]
-  (vec (for [_ (range max-players)]
+  (vec (for [i (range max-players)]
          {:pay-k (r/max-random rng 2 0.5 1.0)
           :ship-k (r/max-random rng 2 0.5 1.0)
-          :default-k (r/max-random rng 5 0.95 1.0)})))
+          :default-k (r/max-random rng 5 0.95 1.0)
+          :name (get msg/player-names i
+                     (str "King " i))})))
 
 (defn- commodity-ptr [what]
   (case what

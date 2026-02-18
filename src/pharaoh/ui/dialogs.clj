@@ -1,5 +1,6 @@
 (ns pharaoh.ui.dialogs
   (:require [pharaoh.loans :as ln]
+            [pharaoh.messages :as msg]
             [pharaoh.overseers :as ov]
             [pharaoh.trading :as tr]
             [pharaoh.random :as r]))
@@ -33,11 +34,21 @@
 (defn- parse-input [input]
   (try (Double/parseDouble input) (catch Exception _ nil)))
 
+(defn- error-category [dialog-type]
+  (case dialog-type
+    :buy-sell :buysell-invalid :loan :loan-invalid
+    :feed :feed-invalid :plant :planting-invalid
+    :spread :manure-invalid :pyramid :pyramid-invalid
+    :overseer :generic-numeric :generic-numeric))
+
+(defn- pick-error [rng cat]
+  (msg/pick rng (get msg/input-error-messages cat)))
+
 (defn execute-dialog [rng state]
   (if-let [d (:dialog state)]
     (let [amt (parse-input (:input d))]
       (if (nil? amt)
-        (assoc state :message "Invalid number")
+        (assoc state :message (pick-error rng (error-category (:type d))))
         (case (:type d)
           :buy-sell
           (let [commodity (:commodity d)]
@@ -50,7 +61,8 @@
                       (if (:error result)
                         (assoc state :message (:error result))
                         (close-dialog result)))
-              (assoc state :message "Select Buy or Sell")))
+              (assoc state :message
+                     (pick-error rng :buysell-no-function))))
 
           :loan
           (case (:mode d)
@@ -62,7 +74,8 @@
                      (if (:error result)
                        (assoc state :message (:error result))
                        (close-dialog result)))
-            (assoc state :message "Select Borrow or Repay"))
+            (assoc state :message
+                   (pick-error rng :loan-no-function)))
 
           :feed
           (let [k (case (:commodity d)
@@ -87,7 +100,8 @@
                     (if (:error result)
                       (assoc state :message (:error result))
                       (close-dialog result)))
-            (assoc state :message "Select Hire or Fire"))
+            (assoc state :message
+                   (pick-error rng :overseer-no-function)))
 
           (close-dialog state))))
     state))

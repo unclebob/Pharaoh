@@ -191,3 +191,51 @@ Feature: Loans
     When the player enters non-numeric text in the loan dialog
     Then a random input-error message is displayed from the loan error pool
     # Pool contains ~5 variants, e.g. "This is a bank. We do things right. Now you try."
+
+  # -----------------------------------------------------------
+  # Emergency Loan Mechanics
+  # -----------------------------------------------------------
+
+  Scenario: Emergency loan covers gold deficit
+    Given the player has -5000 gold
+    And the credit rating is 0.8
+    When an emergency loan is processed
+    Then the player's gold becomes positive
+    And the loan increases by the deficit times 1.1
+    And the credit rating decreases
+    And the interest addition increases by 0.2
+
+  Scenario: Emergency loan applies 10% fee
+    Given the player has -10000 gold
+    When an emergency loan is processed
+    Then the loan increases by 11000
+    # 10000 * 1.1 = 11000 (10% emergency negotiation fee)
+
+  Scenario: No emergency loan when gold is positive
+    Given the player has 5000 gold
+    And the player has a loan of 10000
+    When an emergency loan is processed
+    Then the loan balance should be 10000
+    And the player's gold remains 5000
+
+  # -----------------------------------------------------------
+  # Foreclosure Warning
+  # -----------------------------------------------------------
+
+  Scenario: Foreclosure triggered by excessive debt-to-asset ratio
+    Given the player has a loan of 100000
+    And the player has minimal assets
+    When foreclosure is checked
+    Then the bank forecloses
+    And the game ends
+
+  Scenario: No foreclosure when debt-to-asset ratio is safe
+    Given the player has a loan of 1000
+    And the player has 1000000 gold
+    When foreclosure is checked
+    Then the game continues normally
+
+  Scenario: No foreclosure when no loan exists
+    Given the player has no outstanding loan
+    When foreclosure is checked
+    Then the game continues normally
