@@ -158,6 +158,159 @@ commit. There is no way to cancel a committed contract.
 
 ---
 
+## Dialog Wireframes
+
+All dialogs overlay the main game screen. There are two dialog types:
+**action dialogs** (buy/sell, feed, loan, overseer, plant, spread, pyramid)
+and **face message dialogs** (neighbor visits, idle messages, dunning notices).
+
+### Action Dialog
+
+Action dialogs appear as a rounded-corner rectangle spanning grid cells
+(2, 8) through (7, 12) — 6 columns wide by 5 rows tall. Each dialog has
+an icon image on the left, a title line, an amount input field, and a
+help line showing available keystrokes.
+
+```
++-----------------------------------------------------------+
+|                                                           |
+|  +--------+  buy-sell wheat (w) [buy]                     |
+|  |        |                                               |
+|  | [icon] |  Amount: 500                                  |
+|  |        |                                               |
+|  +--------+  b=buy s=sell  Enter=ok  Esc=cancel           |
+|                                                           |
++-----------------------------------------------------------+
+```
+
+**Layout details:**
+
+- The icon occupies approximately 40% of the dialog height, positioned at
+  the top-left with 8px insets.
+- The title appears to the right of the icon, using the title font size.
+  It includes the dialog type, commodity name (if applicable), keyboard
+  shortcut in parentheses, and current mode in brackets.
+- The amount input field appears below the title at approximately 3x the
+  value font size from the top.
+- The help line appears at approximately 5x the value font size from the
+  top, in gray, using the small font size.
+- The background is light blue-white (RGB 245, 245, 255) with a gray
+  stroke (RGB 100) at weight 2, corner radius 5.
+
+**Icons by dialog type:**
+
+| Dialog Type | Icon File | Image | Description |
+|-------------|-----------|-------|-------------|
+| Buy/Sell | `resources/images/icon_buysell.png` | ![Buy/Sell](resources/images/icon_buysell.png) | Scales of justice — trading |
+| Feed | `resources/images/icon_feed.png` | ![Feed](resources/images/icon_feed.png) | Crossed utensils — feeding |
+| Overseer | `resources/images/icon_overseers.png` | ![Overseer](resources/images/icon_overseers.png) | Man with whip — overseer management |
+| Plant | `resources/images/icon_plant.png` | ![Plant](resources/images/icon_plant.png) | Farmer sowing seeds — planting |
+| Spread | `resources/images/icon_manure.png` | ![Spread](resources/images/icon_manure.png) | Barn/shed — manure spreading |
+| Loan | `resources/images/icon_loan.png` | ![Loan](resources/images/icon_loan.png) | Bank vault/bars — borrowing and repaying |
+| Pyramid | `resources/images/icon_pyramid.png` | ![Pyramid](resources/images/icon_pyramid.png) | Pyramid silhouette — stone quota |
+| Event | `resources/images/icon_event.png` | ![Event](resources/images/icon_event.png) | Lightning bolt — random events |
+
+**Title format by dialog type:**
+
+| Dialog Type | Title Example |
+|-------------|---------------|
+| Buy/Sell | `buy-sell wheat (w) [buy]` |
+| Feed | `feed slaves (S)` |
+| Loan | `loan (L) [borrow]` |
+| Overseer | `overseer (g) [hire]` |
+| Plant | `plant (p)` |
+| Spread | `spread (f)` |
+| Pyramid | `pyramid (q)` |
+
+The pattern is: `{type}` + ` {commodity}` (if applicable) + ` ({shortcut})`
+(if applicable) + ` [{mode}]` (if mode selected).
+
+**Help text by dialog type:**
+
+| Dialog Type | Help Text |
+|-------------|-----------|
+| Buy/Sell | `b=buy s=sell  Enter=ok  Esc=cancel` |
+| Loan | `b=borrow r=repay  Enter=ok  Esc=cancel` |
+| Overseer | `h=hire f=fire  Enter=ok  Esc=cancel` |
+| Feed | `Enter amount, Enter=ok  Esc=cancel` |
+| Plant | `Enter acres, Enter=ok  Esc=cancel` |
+| Spread | `Enter tons, Enter=ok  Esc=cancel` |
+| Pyramid | `Enter stones, Enter=ok  Esc=cancel` |
+
+### Face Message Dialog
+
+Face message dialogs appear when a neighbor delivers a message (idle pep
+talk, chat/advice visit, or dunning notice). They display as a
+rounded-corner rectangle spanning grid cells (1, 8) through (8, 11) —
+8 columns wide by 4 rows tall.
+
+```
++------------------------------------------------------------------+
+|                                                                  |
+|  +-----------+  Your oxen look well-fed. Keep                    |
+|  |           |  feeding the oxen like that.                      |
+|  |  [face    |  Fine looking oxen you've got.                    |
+|  |  portrait]|                                                   |
+|  |           |                                                   |
+|  +-----------+                                    [press any key]|
+|                                                                  |
++------------------------------------------------------------------+
+```
+
+**Layout details:**
+
+- The face portrait occupies approximately 70% of the dialog height,
+  positioned at the left with 10px inset. The portrait is centered
+  vertically within the dialog.
+- The message text appears to the right of the portrait with 12px
+  spacing. Text wraps within the remaining width (dialog width minus
+  portrait width minus margins).
+- The text uses the value font size with 1.3x line leading for
+  readability.
+- A `[press any key]` hint appears at the bottom-right of the dialog
+  in gray, using the small font size.
+- The background is light blue-white (RGB 245, 245, 255) with a gray
+  stroke (RGB 100) at weight 2, corner radius 5.
+- Pressing any key dismisses the dialog. The key press is consumed and
+  not forwarded to other game actions.
+
+**Face portraits:**
+
+| Face | File | Image | Description |
+|------|------|-------|-------------|
+| 0 | `resources/faces/man1.png` | ![Man 1](resources/faces/man1.png) | Afro man with goatee and open jacket |
+| 1 | `resources/faces/man2.png` | ![Man 2](resources/faces/man2.png) | Bearded man in plaid shirt |
+| 2 | `resources/faces/man3.png` | ![Man 3](resources/faces/man3.png) | Man with goatee in bow tie and suit |
+| 3 | `resources/faces/man4.png` | ![Man 4](resources/faces/man4.png) | Man with glasses and necktie |
+
+At game start, faces 0-3 are randomly assigned to the four personality
+roles (Good Guy, Bad Guy, Village Idiot, Banker). The face message dialog
+always uses the assigned face for the delivering neighbor.
+
+### Dialog Interaction Model
+
+Both dialog types block all other input while displayed:
+
+1. **Action dialogs** capture all keystrokes. Typing digits and `.`
+   appends to the input field. Backspace deletes the last character.
+   Mode-selection keys (`b`/`s` for buy/sell, `h`/`f` for overseer,
+   `b`/`r` for loan) switch the dialog mode. Enter executes the action.
+   Esc cancels and closes the dialog. Invalid input or missing mode
+   selection produces an error message (string, not face dialog) that
+   is cleared on the next key press.
+
+2. **Face message dialogs** are dismissed by pressing any key. While a
+   face message is showing, the game loop skips all visit timer checks
+   (no new messages can appear until the current one is dismissed). The
+   visit timers continue running in the background.
+
+3. **Priority:** When both a dialog and a face message exist, the dialog
+   takes visual priority. The face message persists in state until
+   dismissed. Visit timer checks are suppressed whenever either a dialog
+   or a face message is active.
+
+---
+
 ## Formulae
 
 All formulae below use the following random distributions:
