@@ -11,7 +11,7 @@
 
 (defn- setup []
   (q/frame-rate 30)
-  (q/text-font (q/create-font "Monospaced" 10))
+  (q/text-font (q/create-font "Monospaced" lay/value-size))
   {:state (st/initial-state)
    :rng (r/make-rng (System/currentTimeMillis))})
 
@@ -29,20 +29,23 @@
 (defn- draw-dialog [state]
   (when-let [d (:dialog state)]
     (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)]
-      (q/fill 30 30 50)
-      (q/stroke 200 180 100)
-      (q/rect x y w h)
-      (q/fill 255 255 200)
-      (q/text-size 10)
+      (q/fill 245 245 255)
+      (q/stroke 100)
+      (q/stroke-weight 2)
+      (q/rect x y w h 5)
+      (q/stroke-weight 1)
+      (q/fill 0)
+      (q/text-size lay/title-size)
       (q/text (str (name (:type d))
                    (when (:commodity d) (str " " (name (:commodity d))))
                    (when (:mode d) (str " [" (name (:mode d)) "]")))
-              (+ x 4) (+ y 14))
-      (q/fill 255)
-      (q/text (str "Amount: " (:input d)) (+ x 4) (+ y 34))
-      (q/text-size 8)
-      (q/fill 180)
-      (q/text (dialog-help d) (+ x 4) (+ y 54)))))
+              (+ x 8) (+ y lay/title-size 8))
+      (q/fill 0)
+      (q/text-size lay/value-size)
+      (q/text (str "Amount: " (:input d)) (+ x 8) (+ y (* lay/value-size 3) 8))
+      (q/text-size lay/small-size)
+      (q/fill 100)
+      (q/text (dialog-help d) (+ x 8) (+ y (* lay/value-size 5) 8)))))
 
 (defn- draw [{:keys [state]}]
   (scr/draw-screen state)

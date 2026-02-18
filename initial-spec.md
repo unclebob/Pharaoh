@@ -24,8 +24,12 @@ level:
 
 ## Screen Layout
 
-The screen is a 10-column by 25-row grid of labeled cells (50 x 12 pixels
-each), organized into framed, titled sections. Below is a wireframe:
+The screen is a 10-column by 25-row grid of labeled cells organized into
+framed, titled sections. The default window size is 1024x768 pixels; cell
+dimensions scale proportionally so the layout adapts to different window
+sizes. The background is white with black text; font sizes scale with the
+cell height. Light gray horizontal lines separate the rows within each
+section for readability. Below is a wireframe:
 
 ```
 +--Col 0---Col 1---Col 2---Col 3-+--Col 4---Col 5-+--Col 6---Col 7-+--Col 8---Col 9-+

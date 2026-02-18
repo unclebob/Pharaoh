@@ -59,15 +59,15 @@
         (dissoc state :message)))))
 
 (defn handle-mouse [state mx my]
-  (let [col (int (/ (- mx lay/frame-x) lay/cell-w))
-        row (int (/ (- my lay/frame-y) lay/cell-h))]
+  (let [col (int (/ (- mx lay/pad) lay/cell-w))
+        row (int (/ (- my lay/pad) lay/cell-h))]
     (cond
-      ;; RUN button (col 7-9, row 17)
-      (and (<= 7 col 9) (= row 17))
+      ;; RUN button (cols 8-9, row 23)
+      (and (<= 8 col 9) (= row 23))
       (assoc state :run-clicked true)
 
-      ;; QUIT button (col 7-9, row 18)
-      (and (<= 7 col 9) (= row 18))
+      ;; QUIT button (cols 0-1, row 23)
+      (and (<= 0 col 1) (= row 23))
       (assoc state :quit-clicked true)
 
       :else state)))

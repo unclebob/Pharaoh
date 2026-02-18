@@ -1,41 +1,50 @@
 (ns pharaoh.ui.layout)
 
-;; Grid dimensions matching original (10x25 cells)
+;; Default window size
+(def default-w 1024)
+(def default-h 768)
+
+;; Grid dimensions
 (def x-cells 10)
 (def y-cells 25)
-(def cell-w 60)
-(def cell-h 16)
-(def frame-x 8)
-(def frame-y 8)
 
-(def win-w (+ (* x-cells cell-w) (* 2 frame-x)))
-(def win-h (+ (* y-cells cell-h) (* 2 frame-y) 30))
+;; Computed from window size
+(def pad 16)
+(def win-w default-w)
+(def win-h default-h)
+(def cell-w (/ (- win-w (* 2 pad)) x-cells))
+(def cell-h (/ (- win-h (* 2 pad)) y-cells))
 
 (defn cell-rect [col row]
-  {:x (+ (* col cell-w) frame-x)
-   :y (+ (* row cell-h) frame-y)
+  {:x (+ (* col cell-w) pad)
+   :y (+ (* row cell-h) pad)
    :w cell-w :h cell-h})
 
 (defn cell-rect-span [col row cols rows]
-  {:x (+ (* col cell-w) frame-x)
-   :y (+ (* row cell-h) frame-y)
+  {:x (+ (* col cell-w) pad)
+   :y (+ (* row cell-h) pad)
    :w (* cols cell-w) :h (* rows cell-h)})
 
-;; Section positions (col, row, width-cols, height-rows)
+;; Section positions matching spec wireframe [col row width-cols height-rows]
 (def sections
-  {:commodities [0 0 6 7]
-   :prices      [6 0 4 7]
-   :feed-rates  [0 7 3 3]
-   :overseers   [3 7 3 3]
-   :loan        [6 7 4 3]
-   :land        [0 10 5 4]
-   :date        [5 10 2 2]
-   :pyramid     [5 12 5 4]
-   :gold        [0 14 5 3]
-   :contracts   [0 17 7 6]
-   :controls    [7 17 3 2]
-   :status      [7 19 3 1]
-   :message     [0 23 10 2]})
+  {:commodities  [0 0 4 8]
+   :prices       [4 0 2 8]
+   :feed-rates   [6 0 2 4]
+   :date         [8 0 2 3]
+   :overseers    [6 4 2 4]
+   :loan         [8 3 2 5]
+   :land         [0 8 5 3]
+   :spread-plant [5 8 2 3]
+   :gold         [7 8 3 3]
+   :pyramid      [0 11 3 13]
+   :contracts    [3 11 7 12]
+   :controls     [0 23 10 2]})
+
+;; Font sizes scaled to cell height
+(def title-size (max 10 (int (* cell-h 0.55))))
+(def label-size (max 9 (int (* cell-h 0.48))))
+(def value-size (max 9 (int (* cell-h 0.48))))
+(def small-size (max 8 (int (* cell-h 0.38))))
 
 ;; Keyboard shortcuts
 (def key-commands

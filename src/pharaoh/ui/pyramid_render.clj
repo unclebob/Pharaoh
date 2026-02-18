@@ -8,14 +8,15 @@
         pct (if (pos? max-h) (/ cur-h max-h) 0)
         tri-h (* h pct)
         half-base (* (/ w 2.0) pct)]
-    (q/fill 180 150 80)
-    (q/stroke 100 80 40)
-    (q/triangle (+ x (/ w 2.0)) (- (+ y h) tri-h)
-                (- (+ x (/ w 2.0)) half-base) (+ y h)
-                (+ (+ x (/ w 2.0)) half-base) (+ y h))
     ;; Max outline
     (q/no-fill)
-    (q/stroke 200 200 200)
+    (q/stroke 210)
     (q/triangle (+ x (/ w 2.0)) y
                 x (+ y h)
-                (+ x w) (+ y h))))
+                (+ x w) (+ y h))
+    ;; Current pyramid
+    (q/fill 180 150 80)
+    (q/stroke 120 100 50)
+    (q/triangle (+ x (/ w 2.0)) (- (+ y h) tri-h)
+                (- (+ x (/ w 2.0)) half-base) (+ y h)
+                (+ (+ x (/ w 2.0)) half-base) (+ y h))))
