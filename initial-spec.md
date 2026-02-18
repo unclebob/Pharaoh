@@ -1820,19 +1820,48 @@ Repayment sign-offs:
 ## Appendix A: Character Portraits
 
 The four neighbor character portraits were extracted from the original Pharaoh
-1.2 resource fork (PICT resources). They are black-and-white bitmap images:
+1.2 resource fork (PICT v1 resources). The original 1-bit bitmaps have been
+scaled up 150% with bilinear interpolation for anti-aliased smoothing.
 
-| File | PICT Resource ID | Dimensions | Description |
-|------|-----------------|------------|-------------|
-| `resources/faces/man1.png` | 31196 | 76 x 94 px | Man 1 portrait |
-| `resources/faces/man2.png` | 25883 | 71 x 82 px | Man 2 portrait |
-| `resources/faces/man3.png` | 16599 | 44 x 68 px | Man 3 portrait |
-| `resources/faces/man4.png` | 32536 | 37 x 60 px | Man 4 portrait |
+| File | Original | Scaled | Description |
+|------|----------|--------|-------------|
+| `resources/faces/man1.png` | 76 x 94 | 114 x 141 | Afro man with goatee and open jacket |
+| `resources/faces/man2.png` | 71 x 82 | 106 x 123 | Bearded man in plaid shirt |
+| `resources/faces/man3.png` | 44 x 68 | 66 x 102 | Man with goatee in bow tie and suit |
+| `resources/faces/man4.png` | 37 x 60 | 56 x 90 | Man with glasses and necktie |
 
-![Man 1](resources/faces/man1.png) ![Man 2](resources/faces/man2.png)
-![Man 3](resources/faces/man3.png) ![Man 4](resources/faces/man4.png)
+### Man 1 — Afro man
+![Man 1](resources/faces/man1.png)
 
-These portraits are loaded at game startup and displayed in the message dialog
-whenever a neighbor delivers a message. The face number (0-3) is assigned
-randomly to each personality role (banker, good guy, bad guy, village idiot) at
-the start of each game.
+A man with a large afro hairstyle and goatee, wearing an open jacket with
+decorative buttons. His expressive, friendly appearance suits the Good Guy or
+Village Idiot roles.
+
+### Man 2 — Bearded man
+![Man 2](resources/faces/man2.png)
+
+A broad-shouldered man with a full beard and heavy brow, wearing a plaid
+flannel shirt. His stern, no-nonsense look fits the Bad Guy or Banker roles.
+
+### Man 3 — Bow-tie man
+![Man 3](resources/faces/man3.png)
+
+A dapper man with a pointed goatee, wearing a bow tie and formal suit jacket.
+His sharp, sly expression suits the Bad Guy or Village Idiot roles.
+
+### Man 4 — Glasses man
+![Man 4](resources/faces/man4.png)
+
+A clean-cut man with glasses and a necktie, carrying a professional demeanor.
+His conservative, bookish appearance is a natural fit for the Banker role.
+
+### Usage
+
+At game startup the four portraits are loaded and randomly assigned to the
+four neighbor personality roles (Good Guy, Bad Guy, Village Idiot, Banker) so
+that each game has a different face-to-role mapping. When a neighbor delivers
+a message — whether advice, contract offers, idle chatter, or banker
+warnings — the message appears in a dialog box overlaying the game screen with
+that neighbor's portrait displayed alongside the text. The message is also
+spoken aloud via text-to-speech using voice settings (rate and pitch) specific
+to that neighbor.
