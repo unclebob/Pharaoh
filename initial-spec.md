@@ -1865,3 +1865,119 @@ warnings — the message appears in a dialog box overlaying the game screen with
 that neighbor's portrait displayed alongside the text. The message is also
 spoken aloud via text-to-speech using voice settings (rate and pitch) specific
 to that neighbor.
+
+---
+
+## Appendix B: Strategy Guide
+
+### Opening Moves (Months 1-6)
+
+Borrow up to the credit limit immediately. Starting capital is zero and
+interest is unavoidable, so the loan must be put to work fast. Prioritize
+purchases in this order:
+
+1. **Land** -- Buy 50-100 acres. Land is the engine of the wheat economy, but
+   it also costs 100 gold/acre/month in upkeep, so don't over-buy early.
+2. **Slaves** -- Buy enough to work the land. Aim for roughly 10-20 slaves
+   per acre of planted land (see workload ratios below).
+3. **Oxen** -- Buy 1 ox per 2 slaves. This gives a ~1.25x work multiplier
+   from the oxen table. More oxen give diminishing returns.
+4. **Overseers** -- Hire a few right away. Without overseers, slaves have
+   low motivation (~0.3x output). One overseer per 20-30 slaves is a good
+   starting ratio.
+5. **Manure** -- Buy 2-4 tons per acre of land you plan to plant. This
+   pushes yield from 0.1x (unfertilized) to 0.45-0.72x.
+
+Delay purchasing horses until the economy is self-sustaining. Horses eat
+50-60 bushels/month each but don't contribute to farming. Their value is
+boosting overseer effectiveness once you have overseers mounted.
+
+### Feed Rates
+
+Feed rates are bushels of wheat per individual per month. The nourishment
+lookup tables have diminishing returns -- spending more wheat beyond the
+sweet spot wastes grain for negligible health gain. Recommended rates:
+
+| Population | Range   | Sweet Spot | Notes |
+|------------|---------|------------|-------|
+| Slaves     | 0-20    | **12-14**  | Nourishment ~0.12-0.13. Below 8, health declines and slaves die faster than they breed. |
+| Oxen       | 0-120   | **70-80**  | Nourishment ~0.17. Below 50, oxen sicken and lose work efficiency. |
+| Horses     | 0-100   | **50-60**  | Nourishment ~0.18-0.21. Horses are hardier but expensive to feed. |
+
+At these feed rates, health stabilizes above 0.7, where birth rates (~2.5%/mo)
+comfortably exceed death rates (~1%/mo) and the population grows naturally.
+Starving your workforce is a false economy -- replacing dead slaves costs far
+more than feeding live ones.
+
+### Key Ratios
+
+| Ratio | Target | Why |
+|-------|--------|-----|
+| Oxen per slave | **0.5** (1 ox per 2 slaves) | Work multiplier ~1.25x. Going to 1:1 gives ~1.65x but doubles oxen feed costs. |
+| Overseers per slave | **1 per 20-30** | Keeps positive motivation above 0.7x. Too few overseers → low output. Too many → wasted salary. |
+| Horses per overseer | **3** | Overseer effectiveness jumps to ~1.7x when mounted. This is the single biggest force multiplier once you have overseers. |
+| Manure per acre | **2-4 tons** | Yield jumps from 0.1x (bare) to 0.45x (2 tons) to 0.72x (4 tons). Beyond 6 tons the curve flattens to ~0.88x. |
+| Assets to debt | **2:1 or better** | The bank forecloses when the loan-to-net-worth ratio exceeds a threshold. Keeping assets at twice your debt keeps the bank happy and your credit rating rising. |
+
+### Planting Calendar
+
+The seasonal yield multiplier peaks in June-July (1.0x) and bottoms out in
+January (0.2x). Since land takes three months to progress from Planted to
+Ripe, the optimal planting window is:
+
+| Plant in | Ripe in | Seasonal Yield |
+|----------|---------|----------------|
+| March    | June    | 0.95x          |
+| April    | July    | 1.0x (best)    |
+| May      | August  | 0.95x          |
+
+Avoid planting in September-December. A January harvest yields only 20% of
+a July harvest from the same land. Spread manure before planting for maximum
+yield.
+
+### Building the Economy (Months 6-18)
+
+- Reinvest wheat profits into more land, slaves, and oxen. Compounding
+  matters -- doubling your land early pays off for 38 more years.
+- Start paying down the loan when cash flow allows. Interest bleeds gold
+  every month, and the Banker neighbor grows increasingly aggressive about
+  collections.
+- Take **sell contracts** selectively (you grow wheat, they pay you). Avoid
+  buy contracts until you have cash reserves -- the 10% penalty for failure
+  hurts.
+- Once you have 3+ overseers, buy horses at a 3:1 horse-to-overseer ratio.
+  This nearly doubles overseer effectiveness and unlocks the full work output
+  of your slaves.
+
+### Pyramid Strategy (Year 5+)
+
+Do not set a pyramid stone quota until the economy is self-sustaining. Each
+stone requires `avgPyramidHeight * 12` man-hours of slave labor per month,
+so:
+
+- **Start low.** When the pyramid is short, stones are cheap to lay. A quota
+  of 5-10 stones/month is nearly free early on.
+- **Scale up gradually.** As height increases, each stone costs more labor.
+  A slave can lay roughly 3 stones/month at low heights, but far fewer as
+  the pyramid grows.
+- **Watch slave efficiency.** If efficiency drops below 1.0, all activities
+  (farming, harvesting, pyramid building) are proportionally reduced. An
+  overambitious quota starves the farm, which starves the slaves, which
+  collapses everything.
+- **The pyramid is a year-20+ problem.** On Easy (100 ft target), a modest
+  steady effort suffices. On Hard (1,000 ft), you need a massive industrial
+  economy before serious building can begin.
+
+### What to Avoid
+
+- **Horses before overseers.** Horses without overseers to ride them are
+  just expensive mouths to feed.
+- **Over-borrowing.** The credit limit shrinks if the bank loses confidence.
+  Once your credit rating drops, it is slow to recover.
+- **Ignoring random hazards.** Locusts, plagues, and wars can wipe out half
+  your holdings overnight. Keep reserves of wheat and gold as a buffer. Don't
+  run at 100% capacity with zero margin.
+- **Overworking slaves.** When the workload exceeds slave capacity, overseers
+  lash them. Lashing boosts short-term output but causes sickness and death,
+  creating a death spiral of declining labor, more lashing, and eventual
+  revolt.
