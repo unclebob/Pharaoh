@@ -3,6 +3,7 @@ Feature: Pyramid
   The pyramid is modeled as a 2D equilateral triangle.
   Each stone is one unit of area. As area increases, height grows.
   Completing the pyramid wins the game.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -110,3 +111,24 @@ Feature: Pyramid
     When the win condition is checked
     Then 200 + 1 = 201 which is less than the maximum of 300
     And the game continues
+
+  # -----------------------------------------------------------
+  # Pyramid Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Victory message on pyramid completion
+    When the player wins the game
+    Then a random win message is displayed from the congratulations pool
+    And a farewell message is displayed from the farewell pool
+    # Win pool contains ~10 variants, e.g. "Your pyramid is complete! Strike up the band."
+    # Farewell pool contains ~5 variants of warm send-offs
+
+  Scenario: Invalid pyramid quota input
+    When the player enters non-numeric text in the pyramid quota dialog
+    Then a random input-error message is displayed from the pyramid error pool
+    # Pool contains ~5 variants, e.g. "Stone dust has gotten into your fingers."
+
+  Scenario: Negative pyramid quota input
+    When the player enters a negative number for pyramid quota
+    Then a random negative-input message is displayed from the pyramid error pool
+    # Pool contains ~5 variants, e.g. "Negative stones? Ah you want me to remove stones!"

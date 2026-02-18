@@ -2,6 +2,7 @@ Feature: Loans
   The player can borrow gold from the bank and must repay with interest.
   Credit rating determines borrowing capacity and interest rates.
   Failure to repay leads to penalties and eventual foreclosure.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -138,3 +139,55 @@ Feature: Loans
     When a month is simulated
     Then all overseers are fired
     And the overseer pay increases by approximately 20% with slight random variance
+
+  # -----------------------------------------------------------
+  # Loan Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Credit check fee message
+    Given the player requests a loan exceeding the credit limit
+    When the credit check fee is offered
+    Then a random credit-check-fee message is displayed from the pool
+    And the message includes the fee amount
+    # Pool contains ~10 variants, e.g. "It will cost you 500 to find out if you qualify."
+
+  Scenario: Loan approval message
+    Given the player passes the credit check
+    When the loan is granted
+    Then a random loan-approval message is displayed from the pool
+    And the message includes the loan amount and interest rate
+    # Pool contains ~15 variants, often sarcastic
+
+  Scenario: Loan denial message
+    Given the player fails the credit check
+    When the loan is denied
+    Then a random loan-denial message is displayed from the pool
+    # Pool contains ~15 gleefully mocking variants
+
+  Scenario: Loan repayment acknowledgment
+    When the player fully repays the loan
+    Then a random repayment message is displayed from the pool
+    # Pool contains ~8 variants with humorous send-offs
+
+  Scenario: Cash shortage message
+    Given the player runs out of gold at end of month
+    When the shortage is detected
+    Then a random cash-shortage message is displayed from the pool
+    # Pool contains ~10 variants, e.g. "You have run out of cash!"
+
+  Scenario: Foreclosure message
+    Given the bank forecloses on the player
+    When the game ends
+    Then a random foreclosure message is displayed from the pool
+    # Pool contains ~15 variants escalating from warnings to game-over notices
+
+  Scenario: Bankruptcy message when no loan available
+    Given the player is out of gold and cannot get a loan
+    When the game ends
+    Then a random bankruptcy message is displayed from the pool
+    # Pool contains ~10 variants, e.g. "The party's over."
+
+  Scenario: Invalid loan input
+    When the player enters non-numeric text in the loan dialog
+    Then a random input-error message is displayed from the loan error pool
+    # Pool contains ~5 variants, e.g. "This is a bank. We do things right. Now you try."

@@ -3,6 +3,7 @@ Feature: Neighbors
   Each has a distinct personality: good guy, bad guy, village idiot, banker.
   Neighbors give advice on game state, but reliability varies by personality.
   They also deliver idle messages, dunning notices, and random chats.
+  See initial-spec.md Messages section for message pool details.
 
   Background:
     Given the game is running
@@ -148,3 +149,44 @@ Feature: Neighbors
     And Face 2 speaks at rate 150, pitch 66
     And Face 3 speaks at rate 200, pitch 100
     And Face 4 speaks at rate 250, pitch 150
+
+  Scenario: Default voice for unknown speaker
+    Given a message is not attributed to a specific face
+    Then the default voice is rate 190, pitch 310
+
+  # -----------------------------------------------------------
+  # Message Pools (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Idle pep talk pool
+    When a neighbor delivers an idle message
+    Then the message is selected randomly from a pool of approximately 50 variants
+    And messages range from gentle prods to pop-culture references
+    # Examples: "Beam me up Scotty", "Boy are you ugly",
+    # "OK, stand up for exercises. 20 jumping jacks, ready?"
+
+  Scenario: Generic chat pool
+    When a neighbor delivers generic small talk
+    Then the message is selected randomly from a pool of approximately 20 variants
+    And messages include jokes, observations, and game hints
+    # Examples: "So, how ya doin there ol' buddy boy?",
+    # "My brother in-law feeds his horses more than 90 bushels a month."
+
+  Scenario: Advice message pools per topic
+    Given a neighbor gives advice on a topic
+    Then the good message is selected from a pool of approximately 6-15 variants for that topic
+    And the bad message is selected from a separate pool of approximately 6-15 variants
+    # Each of the 10 topics has its own good and bad message pools
+
+  Scenario: Dunning notice pool with escalating severity
+    When the banker delivers a dunning notice
+    Then the message is selected randomly from a pool of approximately 40 variants
+    And messages range from polite reminders to threats
+    # Early examples: "May we respectfully remind you that you owe us some dough?"
+    # Late examples: "Pay up your loan, or we'll break your legs"
+
+  Scenario: All messages are spoken aloud
+    Given speech synthesis is available
+    When any neighbor message is displayed
+    Then the message text is spoken using the delivering neighbor's voice settings
+    And the message appears in a dialog box with the neighbor's face

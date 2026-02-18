@@ -2,6 +2,7 @@ Feature: Health
   Health is tracked on a 0-to-1 scale for slaves, oxen, and horses.
   Nourishment improves health; overwork, lashing, and aging degrade it.
   Health affects birth rate, death rate, work ability, and selling price.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running

@@ -3,6 +3,7 @@ Feature: Game Setup
   They must borrow from the bank to start building an empire.
   The game offers three difficulty levels that set pyramid size,
   credit limits, market prices, and world growth rate.
+  See initial-spec.md for full details.
 
   Background:
     Given the game has been initialized
@@ -107,3 +108,13 @@ Feature: Game Setup
     When a month is simulated
     Then the month should be 1
     And the year should be 4
+
+  # -----------------------------------------------------------
+  # Opening Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Game start delivers an opening speech
+    When the game begins
+    Then a random neighbor delivers an opening message from the opening pool
+    And the message is spoken aloud using the neighbor's voice
+    # Pool contains ~20 variants ranging from solemn to humorous

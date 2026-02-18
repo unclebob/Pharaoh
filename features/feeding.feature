@@ -3,6 +3,7 @@ Feature: Feeding
   Wheat is consumed each month based on these rates.
   When wheat is insufficient, all consumption is reduced proportionally.
   Eating produces manure as a byproduct.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -83,3 +84,12 @@ Feature: Feeding
     And 15 tons of manure are used for spreading
     When the manure balance is calculated
     Then the manure stockpile is clamped to 0
+
+  # -----------------------------------------------------------
+  # Feed Rate Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Invalid feed rate input
+    When the player enters non-numeric text in the feed rate dialog
+    Then a random input-error message is displayed from the feed rate error pool
+    # Pool contains ~5 variants, e.g. "Feed rates are odd things. They have to be numeric."

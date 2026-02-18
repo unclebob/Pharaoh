@@ -3,6 +3,7 @@ Feature: Contracts
   Contracts operate outside the normal supply/demand market.
   They have fixed amounts, prices, and durations.
   Failure to fulfill contracts incurs penalties.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -174,3 +175,49 @@ Feature: Contracts
     And each player's pay probability is the best of 2 random draws between 0.5 and 1.0
     And each player's ship probability is the best of 2 random draws between 0.5 and 1.0
     And each player's default probability is the best of 5 random draws between 0.95 and 1.0
+
+  # -----------------------------------------------------------
+  # Contract Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Counterparty default message
+    Given a counterparty defaults on a contract
+    When the default notification is displayed
+    Then a random default message is shown from the default pool
+    # Pool contains ~8 variants, e.g. "Sudden circumstances make it impossible to continue."
+
+  Scenario: Counterparty partial payment message
+    Given the counterparty cannot pay the full amount this month
+    When the partial payment notification is displayed
+    Then a random partial-payment message is shown from the pool
+    And the message asks the player to hold the remainder until next month
+    # Pool contains ~8 variants, e.g. "I just can't seem to raise all the necessary funds."
+
+  Scenario: Counterparty partial shipment message
+    Given the counterparty cannot ship all goods this month
+    When the partial shipment notification is displayed
+    Then a random partial-shipment message is shown from the pool
+    And the message promises completion next month
+    # Pool contains ~8 variants, e.g. "Some of your goods have been backordered."
+
+  Scenario: Player insufficient goods message
+    Given the player cannot fulfill a BUY contract
+    When the shortfall notification is displayed
+    Then a random insufficient-goods message is shown from the pool
+    # Pool contains ~8 variants, e.g. "You didn't send me everything!"
+
+  Scenario: Player insufficient funds for SELL contract message
+    Given the player cannot afford a SELL contract payment
+    When the shortfall notification is displayed
+    Then a random insufficient-funds message is shown from the contract pool
+    # Pool contains ~8 variants, e.g. "Welcher! You said you'd pay."
+
+  Scenario: BUY contract completion message
+    When a BUY contract is fully fulfilled
+    Then a random buy-completion message is shown from the pool
+    # Pool contains ~15 variants, e.g. "I am pleased to take final possession of the goods."
+
+  Scenario: SELL contract completion message
+    When a SELL contract is fully fulfilled
+    Then a random sell-completion message is shown from the pool
+    # Pool contains ~10 variants, e.g. "This transaction was successfully concluded."

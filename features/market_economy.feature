@@ -2,6 +2,7 @@ Feature: Market Economy
   Commodity prices fluctuate based on inflation and supply/demand dynamics.
   The world economy has its own production and consumption that the player
   competes with. Oversupply drives prices down; undersupply drives them up.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running

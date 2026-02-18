@@ -3,6 +3,7 @@ Feature: Overseers
   They are paid monthly salaries in gold.
   When work falls behind, overseers become stressed and lash slaves.
   Lashing increases short-term motivation but damages slave health.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -114,3 +115,24 @@ Feature: Overseers
     When monthly costs are assessed
     Then all overseers are fired
     And the overseer pay rate increases by approximately 20% with slight variance
+
+  # -----------------------------------------------------------
+  # Overseer Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Overseer missed payroll message
+    Given the player cannot pay overseers this month
+    When overseers quit
+    Then a random missed-payroll message is displayed from the pool
+    And the message includes the raise percentage demanded to return
+    # Pool contains ~8 variants, e.g. "Your overseers want a 20% raise. You missed their payroll."
+
+  Scenario: Invalid overseer input
+    When the player enters non-numeric text in the overseer dialog
+    Then a random input-error message is displayed from the overseer error pool
+    # Pool contains ~5 variants, e.g. "Hire or fire. Hey, that rhymes!"
+
+  Scenario: Fractional overseer input
+    When the player enters a fractional number for overseers
+    Then a random fractional-input message is displayed from the pool
+    # Pool contains ~5 variants, e.g. "That is likely to be a bloody operation."

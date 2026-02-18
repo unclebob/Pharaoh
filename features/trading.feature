@@ -3,6 +3,7 @@ Feature: Trading
   Tradeable commodities are: wheat, slaves, oxen, horses, manure, and land.
   Market supply and demand limit transaction sizes.
   Livestock health affects the selling price.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -115,3 +116,38 @@ Feature: Trading
     When the player sells 50 acres of fallow land
     Then no crops are affected
     And the player has 150 acres of fallow land
+
+  # -----------------------------------------------------------
+  # Trading Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Supply limit message when selling exceeds market capacity
+    Given the market can only absorb 500 bushels of wheat
+    When the player tries to sell 800 bushels
+    Then a random supply-limit message is displayed from the pool
+    And the message includes the maximum amount the market will accept
+    # Pool contains ~10 variants, e.g. "I am afraid I can't accept any more than 500."
+
+  Scenario: Demand limit message when buying exceeds supply
+    Given the market only has 300 bushels in stock
+    When the player tries to buy 500 bushels
+    Then a random demand-limit message is displayed from the pool
+    And the message includes the amount available
+    # Pool contains ~10 variants, e.g. "I am afraid that I can only spare 300."
+
+  Scenario: Insufficient funds message
+    Given the player cannot afford the purchase
+    When the player attempts to buy
+    Then a random insufficient-funds message is displayed from the pool
+    And the message includes the maximum the player can afford
+    # Pool contains ~10 variants, e.g. "You only have the cash for 500."
+
+  Scenario: Successful transaction message
+    When a buy or sell transaction completes normally
+    Then a random success message is displayed from the pool
+    # Pool contains ~10 variants, e.g. "Thank you for buying my quality merchandise."
+
+  Scenario: Invalid trading input
+    When the player enters non-numeric text in the buy/sell dialog
+    Then a random input-error message is displayed from the trading error pool
+    # Pool contains ~10 humorous variants per dialog type

@@ -3,6 +3,7 @@ Feature: Planting
   Wheat is planted on fallow land, grows over three months, and is harvested.
   Yield depends on fertilizer (manure per acre) and the planting season.
   Slave efficiency affects how much of the planned planting actually occurs.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
@@ -139,3 +140,27 @@ Feature: Planting
     When wheat is planted
     Then the seasonal yield multiplier is at its minimum
     And the resulting harvest will be very poor
+
+  # -----------------------------------------------------------
+  # Planting Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Invalid planting input
+    When the player enters non-numeric text in the planting dialog
+    Then a random input-error message is displayed from the planting error pool
+    # Pool contains ~5 variants, e.g. "We are planting wheat, not alphabet soup."
+
+  Scenario: Negative planting input
+    When the player enters a negative number for acres to plant
+    Then a random negative-input message is displayed from the planting error pool
+    # Pool contains ~5 variants, e.g. "Negative wheat. Grows down eh?"
+
+  Scenario: Invalid manure spread input
+    When the player enters non-numeric text in the manure spread dialog
+    Then a random input-error message is displayed from the fertilizer error pool
+    # Pool contains ~5 variants, e.g. "We are talking about fertilizer, measured in tons."
+
+  Scenario: Negative manure spread input
+    When the player enters a negative number for manure to spread
+    Then a random negative-input message is displayed from the fertilizer error pool
+    # Pool contains ~5 variants, e.g. "Negative fertilizer? Hey, maybe that's food!"

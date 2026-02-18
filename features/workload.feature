@@ -3,6 +3,7 @@ Feature: Workload
   The total required work is divided among all slaves.
   When slaves cannot meet the workload, all activities are proportionally reduced.
   Oxen multiply slave work capacity; motivation and health affect output.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running

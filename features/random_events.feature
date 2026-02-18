@@ -2,6 +2,7 @@ Feature: Random Events
   Each month there is a 12.5% chance (1 in 8) of a random event.
   Events range from catastrophic (locusts, acts of god) to economic (price shifts).
   Each event type has a probability within the event roll and specific effects.
+  See initial-spec.md for full details.
 
   Background:
     Given a random event has been triggered
@@ -194,3 +195,64 @@ Feature: Random Events
     Then each commodity price shifts by approximately ±15% (normally distributed)
     # Wheat, oxen, horse, slave, and manure prices are all independently shifted
     And the inflation rate shifts by a small normally-distributed amount
+
+  # -----------------------------------------------------------
+  # Event Narration Messages (see initial-spec.md Messages section)
+  # -----------------------------------------------------------
+
+  Scenario: Acts of God narration assembled from word pools
+    When an act of God occurs
+    Then the narration is assembled from three pools: adjective, disaster type, and consequence
+    And a random adjective is chosen (e.g., "an incredibly large", "an unpredicted")
+    And a random disaster type is chosen (e.g., "volcano", "earthquake", "flood")
+    And a random consequence is chosen (e.g., "devastated your property!", "decimated your land")
+    And the assembled message is spoken by a random neighbor
+
+  Scenario: Acts of Mobs narration assembled from word pools
+    When mobs attack
+    Then the narration is assembled from four pools: crowd size, population, motivation, and action
+    And a random crowd size is chosen (e.g., "a huge crowd", "an immense gathering")
+    And a random motivation is chosen (e.g., "social injustice", "animal abuse", "your ugly face")
+    And a random action is chosen (e.g., "held a rock concert on your fields", "set fire to your crops")
+    And the assembled message is spoken by a random neighbor
+
+  Scenario: War narration includes outcome
+    When a war occurs
+    Then the message includes the attacking force description
+    And if the player wins, a victory message with gain percentage is shown
+    And if the player loses, a defeat message with loss percentage is shown
+
+  Scenario: Revolt narration includes destruction percentage
+    When a revolt occurs
+    Then the narration includes the destruction percentage
+    # Pool contains ~5 variants, e.g. "Your slaves are moved to revolt. You lose X%."
+
+  Scenario: Health event narration
+    When a health event occurs
+    Then a random health-event message is displayed from the pool
+    # Pool contains ~10 variants describing various causes of illness
+
+  Scenario: Wheat event narration
+    When a wheat event occurs
+    Then a random wheat-event message is displayed with loss percentage
+    # Pool contains ~10 variants, e.g. "A horrible blight destroys X% of your crops."
+
+  Scenario: Gold event narration
+    When a gold event occurs
+    Then a random gold-event message is displayed with loss percentage
+    # Pool contains ~10 variants, e.g. "Thieves break into your treasury and take X%."
+
+  Scenario: Economy event narration
+    When an economy event occurs
+    Then a random economy-event message is displayed from the pool
+    # Pool contains ~10 variants, e.g. "A solar eclipse causes hoarding and panic."
+
+  Scenario: Labor event narration
+    When a labor event occurs
+    Then a random labor-event message is displayed with raise percentage
+    # Pool contains ~10 variants, e.g. "Overseers are disgruntled. They strike for a X% raise."
+
+  Scenario: Workload event narration
+    When a workload event occurs
+    Then a random workload-event message is displayed from the pool
+    # Pool contains ~10 variants describing absurd reasons for extra labor

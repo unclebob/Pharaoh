@@ -1,6 +1,7 @@
 Feature: Game Persistence
   The player can save the current game state to a file and restore it later.
   All game variables are preserved across save and restore cycles.
+  See initial-spec.md for full details.
 
   Background:
     Given the game is running
