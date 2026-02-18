@@ -70,27 +70,27 @@
 
   (let [s state]
     ;; === Commodities (cols 0-3, rows 1-6) ===
-    (draw-label 0 1 "Wheat")   (draw-val 1 1 (fmt (:wheat s)))
+    (draw-label 0 1 "Wheat (w)")   (draw-val 1 1 (fmt (:wheat s)))
     (draw-delta 2 1 (delta-pct (:wheat s) (:old-wheat s)))
     (draw-val 3 1 (fmt (:old-wheat s)))
 
-    (draw-label 0 2 "Manure")  (draw-val 1 2 (fmt (:manure s)))
+    (draw-label 0 2 "Manure (m)")  (draw-val 1 2 (fmt (:manure s)))
     (draw-delta 2 2 (delta-pct (:manure s) (:old-manure s)))
     (draw-val 3 2 (fmt (:old-manure s)))
 
-    (draw-label 0 3 "Slaves")  (draw-val 1 3 (fmt (:slaves s)))
+    (draw-label 0 3 "Slaves (s)")  (draw-val 1 3 (fmt (:slaves s)))
     (draw-delta 2 3 (delta-pct (:slaves s) (:old-slaves s)))
     (draw-val 3 3 (fmt (:old-slaves s)))
 
-    (draw-label 0 4 "Horses")  (draw-val 1 4 (fmt (:horses s)))
+    (draw-label 0 4 "Horses (h)")  (draw-val 1 4 (fmt (:horses s)))
     (draw-delta 2 4 (delta-pct (:horses s) (:old-horses s)))
     (draw-val 3 4 (fmt (:old-horses s)))
 
-    (draw-label 0 5 "Oxen")    (draw-val 1 5 (fmt (:oxen s)))
+    (draw-label 0 5 "Oxen (o)")    (draw-val 1 5 (fmt (:oxen s)))
     (draw-delta 2 5 (delta-pct (:oxen s) (:old-oxen s)))
     (draw-val 3 5 (fmt (:old-oxen s)))
 
-    (draw-label 0 6 "Land")    (draw-val 1 6 (fmt (st/total-land s)))
+    (draw-label 0 6 "Land (l)")    (draw-val 1 6 (fmt (st/total-land s)))
 
     ;; === Prices (cols 4-5, rows 1-6) ===
     (draw-label 4 1 "Wheat")  (draw-val 5 1 (fmt1 (get-in s [:prices :wheat])))
@@ -101,24 +101,24 @@
     (draw-label 4 6 "Land")   (draw-val 5 6 (fmt (get-in s [:prices :land])))
 
     ;; === Feed Rates (cols 6-7, rows 1-3) ===
-    (draw-label 6 1 "Slaves") (draw-val 7 1 (fmt1 (:sl-feed-rt s)))
-    (draw-label 6 2 "Oxen")   (draw-val 7 2 (fmt1 (:ox-feed-rt s)))
-    (draw-label 6 3 "Horses") (draw-val 7 3 (fmt1 (:hs-feed-rt s)))
+    (draw-label 6 1 "Slaves (S)") (draw-val 7 1 (fmt1 (:sl-feed-rt s)))
+    (draw-label 6 2 "Oxen (O)")   (draw-val 7 2 (fmt1 (:ox-feed-rt s)))
+    (draw-label 6 3 "Horses (H)") (draw-val 7 3 (fmt1 (:hs-feed-rt s)))
 
     ;; === Date (cols 8-9, rows 1-2) ===
     (draw-label 8 1 "Year")  (draw-val 9 1 (str (:year s)))
     (draw-label 8 2 "Month") (draw-val 9 2 (str (:month s)))
 
     ;; === Overseers (cols 6-7, rows 5-7) ===
-    (draw-label 6 5 "O'seers") (draw-val 7 5 (fmt (:overseers s)))
-    (draw-label 6 6 "Salary")  (draw-val 7 6 (fmt (:ov-pay s)))
-    (draw-label 6 7 "Press")   (draw-val 7 7 (fmt1 (:ov-press s)))
+    (draw-label 6 5 "O'seers (g)") (draw-val 7 5 (fmt (:overseers s)))
+    (draw-label 6 6 "Salary")      (draw-val 7 6 (fmt (:ov-pay s)))
+    (draw-label 6 7 "Press")       (draw-val 7 7 (fmt1 (:ov-press s)))
 
     ;; === Loan (cols 8-9, rows 4-7) ===
-    (draw-label 8 4 "Loan")  (draw-val 9 4 (fmt (:loan s)))
-    (draw-label 8 5 "Int%")  (draw-val 9 5 (fmt1 (+ (:interest s) (:int-addition s))))
-    (draw-label 8 6 "Credit") (draw-val 9 6 (fmt (:credit-limit s)))
-    (draw-label 8 7 "Rating") (draw-val 9 7 (fmt1 (:credit-rating s)))
+    (draw-label 8 4 "Loan (L)")  (draw-val 9 4 (fmt (:loan s)))
+    (draw-label 8 5 "Int%")     (draw-val 9 5 (fmt1 (+ (:interest s) (:int-addition s))))
+    (draw-label 8 6 "Credit")   (draw-val 9 6 (fmt (:credit-limit s)))
+    (draw-label 8 7 "Rating")   (draw-val 9 7 (fmt1 (:credit-rating s)))
 
     ;; === Land (cols 0-4, rows 9-10) ===
     (draw-label 0 9 "Fallow")  (draw-val 0 10 (fmt (:ln-fallow s)))
@@ -128,8 +128,8 @@
     (draw-label 4 9 "Total")   (draw-val 4 10 (fmt (st/total-land s)))
 
     ;; === Spread & Plant (cols 5-6, rows 9-10) ===
-    (draw-label 5 9 "Manure") (draw-val 5 10 (fmt (:mn-to-sprd s)))
-    (draw-label 6 9 "Land")   (draw-val 6 10 (fmt (:ln-to-sew s)))
+    (draw-label 5 9 "Manure (f)") (draw-val 5 10 (fmt (:mn-to-sprd s)))
+    (draw-label 6 9 "Land (p)")   (draw-val 6 10 (fmt (:ln-to-sew s)))
 
     ;; === Gold (cols 7-9, rows 9-10) ===
     (draw-label 7 9 "Gold")    (draw-val 8 9 (fmt (:gold s)))
@@ -137,7 +137,7 @@
     (draw-label 7 10 "NetWth") (draw-val 8 10 (fmt (get s :net-worth 0)))
 
     ;; === Pyramid (cols 0-2, rows 12-23) ===
-    (draw-label 0 12 "Quota")  (draw-label 1 12 "Stones")
+    (draw-label 0 12 "Quota (q)")  (draw-label 1 12 "Stones")
     (draw-val   0 13 (fmt (:py-quota s)))
     (draw-val   1 13 (fmt (:py-stones s)))
     (draw-label 1 14 "Height") (draw-val 2 14 (fmt1 (:py-height s)))
