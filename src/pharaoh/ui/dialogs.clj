@@ -11,6 +11,23 @@
 ;;                   :mode :buy/:sell/:keep/:acquire
 ;;                   :input ""}
 
+(defn open-contracts-dialog [state]
+  (let [active (filterv :active (:cont-offers state))]
+    (assoc state :dialog {:type :contracts :mode :browsing
+                          :selected 0 :input ""
+                          :active-offers active})))
+
+(defn navigate-contracts [state direction]
+  (let [d (:dialog state)
+        n (count (:active-offers d))
+        sel (:selected d)]
+    (if (zero? n)
+      state
+      (let [new-sel (case direction
+                      :down (mod (inc sel) n)
+                      :up (mod (+ sel (dec n)) n))]
+        (assoc-in state [:dialog :selected] new-sel)))))
+
 (defn open-dialog [state dialog-type & [opts]]
   (assoc state :dialog (merge {:type dialog-type :input "" :mode nil} opts)))
 

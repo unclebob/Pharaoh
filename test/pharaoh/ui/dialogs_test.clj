@@ -345,6 +345,65 @@
     (let [result (dlg/execute-dialog rng state)]
       (is (string? (:message result))))))
 
+;; -- contracts dialog --
+
+(deftest open-contracts-dialog-sets-browsing-mode
+  (let [offers (vec (repeat 5 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers)
+                  (dlg/open-contracts-dialog))]
+    (is (= :contracts (get-in state [:dialog :type])))
+    (is (= :browsing (get-in state [:dialog :mode])))
+    (is (= 0 (get-in state [:dialog :selected])))))
+
+(deftest open-contracts-dialog-filters-active-offers
+  (let [offers [{:type :buy :who 0 :what :wheat :amount 100.0
+                 :price 1000.0 :duration 24 :active true :pct 0.0}
+                {:active false}
+                {:type :sell :who 1 :what :slaves :amount 50.0
+                 :price 5000.0 :duration 12 :active true :pct 0.0}]
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers)
+                  (dlg/open-contracts-dialog))]
+    (is (= 2 (count (get-in state [:dialog :active-offers]))))))
+
+(deftest contracts-dialog-navigate-down
+  (let [offers (vec (repeat 5 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers)
+                  (dlg/open-contracts-dialog))]
+    (is (= 1 (get-in (dlg/navigate-contracts state :down) [:dialog :selected])))))
+
+(deftest contracts-dialog-navigate-up-at-zero-wraps-to-last
+  (let [offers (vec (repeat 3 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers)
+                  (dlg/open-contracts-dialog))]
+    (is (= 2 (get-in (dlg/navigate-contracts state :up) [:dialog :selected])))))
+
+(deftest contracts-dialog-navigate-down-wraps-to-first
+  (let [offers (vec (repeat 3 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers)
+                  (dlg/open-contracts-dialog))
+        at-last (assoc-in state [:dialog :selected] 2)]
+    (is (= 0 (get-in (dlg/navigate-contracts at-last :down) [:dialog :selected])))))
+
+(deftest contracts-dialog-navigate-with-no-offers
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers [])
+                  (dlg/open-contracts-dialog))]
+    (is (= 0 (get-in (dlg/navigate-contracts state :down) [:dialog :selected])))
+    (is (= 0 (get-in (dlg/navigate-contracts state :up) [:dialog :selected])))))
+
 ;; -- error categories --
 
 (deftest execute-dialog-error-categories
