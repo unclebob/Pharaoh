@@ -1,0 +1,1 @@
+#include <std.h>#include <quickdraw.h>#include "random.h"main(ac,av)int ac;TEXT **av;	{	ULONG iLim,n;	DOUBLE m,sum=0.0,r,atof();	scr_clear();	iLim = atol(av[1]);	m = atof(av[2]);		for (n=0; n<iLim; n++)		{		r = ARandom(m,.3*m);		sum += r;		printf("%10.6f\n", r);		}	printf("The mean of the %ld exponential variables is %10.5f\n", n, sum/n);		}			

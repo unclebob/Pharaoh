@@ -1,0 +1,1 @@
+/*  * random.h -- The definitions and declarations for the random number generators  */  DOUBLE URandom(), GRandom(), ERandom(), ARandom(), MaxRandom();

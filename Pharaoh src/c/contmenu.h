@@ -1,0 +1,1 @@
+/*  * Menu commands for contracts  */  #define FIRSTCONT		100#define LASTCONT		114

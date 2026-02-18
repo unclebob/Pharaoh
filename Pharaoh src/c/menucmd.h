@@ -1,0 +1,1 @@
+/*  * The menu commands  */  #define C_NEW		1#define C_OPEN	2#define C_CLOSE	3#define C_SAVE	4#define C_SAVEAS	5#define C_REVERT	6#define C_QUIT		7#define C_PREG	8	/* print registration */#define C_LICENSE	9	/* enter license password */#define C_DEBUG	99		/* Turn on the debug window */#define C_SYMBOL	98		/* debug command to change value of a symbol */

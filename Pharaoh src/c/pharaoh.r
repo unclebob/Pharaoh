@@ -1,0 +1,1 @@
+** Pharaoh.r -- 	This file is input to RGEN.  It combines the code resources in the 'pharaoh' file*			with the other resources in pharaoh.res file.!pharcodeAPPLPHARINCLUDE pharaoh:res/pharaoh.resTYPE PHAR = GNRL ;; version data,0.SPharaoh 0.1 Copyright 18 Aug 1987 by R. Martin

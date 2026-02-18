@@ -1,0 +1,1 @@
+/* * Init.c -- Initialize the Macintosh system. */ #include <std.h>#include <quickdraw.h>#include <inits.h>#include <event.h>VOID Init()	{	InitGraf(&thePort);	InitFonts();	FlushEvents(everyEvent, 0);	InitWindows();	InitMenus();	TEInit();	InitDialogs(NIL);	InitCursor();	}	

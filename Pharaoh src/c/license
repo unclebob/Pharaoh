@@ -1,0 +1,1 @@
+makeres $2 TEXT 129 License pharaoh:c:$1cryptres -c pharaoh:c:$1 TEXT 129

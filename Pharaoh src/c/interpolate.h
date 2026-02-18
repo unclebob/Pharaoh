@@ -1,0 +1,1 @@
+/* * This header describes the format of the tables which drive the interpolator */  #ifndef __inth #define __inth typedef struct  	{	DOUBLE minX, maxX,yVector[11];	} Table;	DOUBLE interpolate();#endif
