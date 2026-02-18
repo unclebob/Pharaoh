@@ -212,3 +212,43 @@ Feature: Neighbors
     When the player presses any key
     Then the message is dismissed
     And the key press is not processed as a game action
+
+  # -----------------------------------------------------------
+  # Visit Timer System
+  # -----------------------------------------------------------
+
+  Scenario: Idle message appears after timeout
+    Given the visit timers are initialized
+    And the idle timer has expired
+    When visits are checked
+    Then an idle message is displayed with a face
+    And the idle timer is reset to the future
+
+  Scenario: Chat visit delivers advice with face
+    Given the visit timers are initialized
+    And the chat timer has expired
+    When visits are checked
+    Then a chat message is displayed with a face
+    And the chat timer is reset to the future
+
+  Scenario: Dunning notice appears when loan is outstanding
+    Given the visit timers are initialized
+    And the player has an outstanding loan
+    And the dunning timer has expired
+    When visits are checked
+    Then a dunning message is displayed with the banker face
+    And the dunning timer is reset to the future
+
+  Scenario: No visits while dialog is open
+    Given the visit timers are initialized
+    And a dialog is open
+    And the idle timer has expired
+    When visits are checked
+    Then no visit message is displayed
+
+  Scenario: No visits while message is showing
+    Given the visit timers are initialized
+    And a face message is already showing
+    And the idle timer has expired
+    When visits are checked
+    Then the existing message is preserved

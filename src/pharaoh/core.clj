@@ -4,6 +4,9 @@
             [pharaoh.state :as st]
             [pharaoh.random :as r]
             [pharaoh.simulation :as sim]
+            [pharaoh.neighbors :as nb]
+            [pharaoh.visits :as vis]
+            [pharaoh.speech :as speech]
             [pharaoh.ui.layout :as lay]
             [pharaoh.ui.screen :as scr]
             [pharaoh.ui.input :as inp])
@@ -23,13 +26,20 @@
    :pyramid   (q/load-image "resources/images/icon_pyramid.png")
    :event     (q/load-image "resources/images/icon_event.png")})
 
+(defn- init-timers [rng]
+  (vis/init-timers rng (System/currentTimeMillis)))
+
 (defn- setup []
   (q/frame-rate 30)
   (q/text-font (q/create-font "Monospaced" lay/value-size))
-  {:state (st/initial-state)
-   :rng (r/make-rng (System/currentTimeMillis))
-   :faces (load-faces)
-   :icons (load-icons)})
+  (let [rng (r/make-rng (System/currentTimeMillis))
+        men (nb/set-men rng)]
+    (merge
+      {:state (merge (st/initial-state) men)
+       :rng rng
+       :faces (load-faces)
+       :icons (load-icons)}
+      (init-timers rng))))
 
 (defn- dialog-shortcut [d]
   (case (:type d)
@@ -105,6 +115,14 @@
     (q/text-size lay/small-size)
     (q/text "[press any key]" text-x (+ y h -16))))
 
+(defn- update-app [app]
+  (let [old-msg (get-in app [:state :message])
+        app (vis/check-visits app (System/currentTimeMillis))
+        new-msg (get-in app [:state :message])]
+    (when (and new-msg (not= old-msg new-msg))
+      (speech/speak (:text new-msg) (:face new-msg)))
+    app))
+
 (defn- draw [{:keys [state faces icons]}]
   (scr/draw-screen state)
   (draw-dialog state icons)
@@ -133,6 +151,7 @@
     :title "Pharaoh"
     :size [lay/win-w lay/win-h]
     :setup setup
+    :update update-app
     :draw draw
     :key-pressed key-pressed
     :mouse-pressed mouse-clicked

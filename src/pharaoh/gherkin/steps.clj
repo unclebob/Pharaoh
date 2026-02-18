@@ -16,6 +16,7 @@
             [pharaoh.state :as st]
             [pharaoh.tables :as t]
             [pharaoh.trading :as tr]
+            [pharaoh.visits :as vis]
             [pharaoh.workload :as wk]))
 
 (defn- near? [a b & [tol]]
@@ -833,6 +834,83 @@
 
    {:type :then :pattern #"the key press is not processed as a game action"
     :handler (fn [w] w)}
+
+   ;; ===== Visit Timer Steps =====
+   {:type :given :pattern #"the visit timers are initialized"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     w (if (:state w) w (assoc w :state (st/initial-state)))
+                     timers (vis/init-timers (:rng w) 10000)]
+                 (merge w timers {:now 10000})))}
+
+   {:type :given :pattern #"the idle timer has expired"
+    :handler (fn [w] (assoc w :next-idle (- (:now w) 1000)))}
+
+   {:type :given :pattern #"the chat timer has expired"
+    :handler (fn [w] (assoc w :next-chat (- (:now w) 1000)))}
+
+   {:type :given :pattern #"the dunning timer has expired"
+    :handler (fn [w] (assoc w :next-dunning (- (:now w) 1000)))}
+
+   {:type :given :pattern #"a dialog is open"
+    :handler (fn [w] (assoc-in w [:state :dialog] {:type :buy-sell}))}
+
+   {:type :given :pattern #"a face message is already showing"
+    :handler (fn [w] (assoc-in w [:state :message] {:text "existing" :face 0}))}
+
+   {:type :when :pattern #"visits are checked"
+    :handler (fn [w]
+               (let [result (vis/check-visits w (:now w))]
+                 (merge w (select-keys result [:state :next-idle :next-chat :next-dunning]))))}
+
+   {:type :then :pattern #"an idle message is displayed with a face"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (string? (:text m)) "Expected text")
+                 (assert (number? (:face m)) "Expected face"))
+               w)}
+
+   {:type :then :pattern #"a chat message is displayed with a face"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (string? (:text m)) "Expected text")
+                 (assert (number? (:face m)) "Expected face"))
+               w)}
+
+   {:type :then :pattern #"a dunning message is displayed with the banker face"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (= (:banker (:state w)) (:face m))
+                         "Expected banker face"))
+               w)}
+
+   {:type :then :pattern #"the idle timer is reset to the future"
+    :handler (fn [w]
+               (assert (> (:next-idle w) (:now w)) "Idle timer should be in the future")
+               w)}
+
+   {:type :then :pattern #"the chat timer is reset to the future"
+    :handler (fn [w]
+               (assert (> (:next-chat w) (:now w)) "Chat timer should be in the future")
+               w)}
+
+   {:type :then :pattern #"the dunning timer is reset to the future"
+    :handler (fn [w]
+               (assert (> (:next-dunning w) (:now w)) "Dunning timer should be in the future")
+               w)}
+
+   {:type :then :pattern #"no visit message is displayed"
+    :handler (fn [w]
+               (assert (nil? (get-in w [:state :message])) "Expected no message")
+               w)}
+
+   {:type :then :pattern #"the existing message is preserved"
+    :handler (fn [w]
+               (assert (= {:text "existing" :face 0} (get-in w [:state :message])))
+               w)}
 
    ;; ===== Catch-all =====
    {:type :any :pattern #".*"
