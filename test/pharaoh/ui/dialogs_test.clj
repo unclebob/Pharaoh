@@ -404,6 +404,70 @@
     (is (= 0 (get-in (dlg/navigate-contracts state :down) [:dialog :selected])))
     (is (= 0 (get-in (dlg/navigate-contracts state :up) [:dialog :selected])))))
 
+;; -- contracts confirm/accept/reject --
+
+(deftest contracts-dialog-enter-confirming-mode
+  (let [offers (vec (repeat 5 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers :players [{:name "King HamuNam"}])
+                  (dlg/open-contracts-dialog))
+        result (dlg/confirm-selected state)]
+    (is (= :confirming (get-in result [:dialog :mode])))))
+
+(deftest contracts-dialog-accept-moves-to-pending
+  (let [offers (vec (repeat 5 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers
+                         :players [{:name "King HamuNam"}]
+                         :cont-pend [])
+                  (dlg/open-contracts-dialog))
+        result (dlg/accept-selected state)]
+    (is (= 1 (count (:cont-pend result))))
+    (is (= :browsing (get-in result [:dialog :mode])))))
+
+(deftest contracts-dialog-accept-deactivates-offer
+  (let [offers (vec (repeat 3 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers
+                         :players [{:name "King HamuNam"}]
+                         :cont-pend [])
+                  (dlg/open-contracts-dialog))
+        result (dlg/accept-selected state)]
+    ;; active-offers should be refreshed with one fewer
+    (is (= 2 (count (get-in result [:dialog :active-offers]))))))
+
+(deftest contracts-dialog-reject-returns-to-browsing
+  (let [offers (vec (repeat 5 {:type :buy :who 0 :what :wheat
+                                :amount 100.0 :price 1000.0
+                                :duration 24 :active true :pct 0.0}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers
+                         :players [{:name "King HamuNam"}]
+                         :cont-pend [])
+                  (dlg/open-contracts-dialog)
+                  (dlg/confirm-selected))
+        result (dlg/reject-selected state)]
+    (is (= :browsing (get-in result [:dialog :mode])))
+    (is (empty? (:cont-pend result)))))
+
+(deftest contracts-dialog-accept-at-max-pending-shows-error
+  (let [offers [{:type :buy :who 0 :what :wheat :amount 100.0
+                 :price 1000.0 :duration 24 :active true :pct 0.0}]
+        pend (vec (repeat 10 {:active true}))
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers
+                         :players [{:name "King HamuNam"}]
+                         :cont-pend pend)
+                  (dlg/open-contracts-dialog))
+        result (dlg/accept-selected state)]
+    (is (string? (:message result)))))
+
 ;; -- error categories --
 
 (deftest execute-dialog-error-categories

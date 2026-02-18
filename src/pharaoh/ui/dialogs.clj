@@ -1,5 +1,6 @@
 (ns pharaoh.ui.dialogs
-  (:require [pharaoh.loans :as ln]
+  (:require [pharaoh.contracts :as ct]
+            [pharaoh.loans :as ln]
             [pharaoh.messages :as msg]
             [pharaoh.overseers :as ov]
             [pharaoh.trading :as tr]
@@ -27,6 +28,26 @@
                       :down (mod (inc sel) n)
                       :up (mod (+ sel (dec n)) n))]
         (assoc-in state [:dialog :selected] new-sel)))))
+
+(defn confirm-selected [state]
+  (assoc-in state [:dialog :mode] :confirming))
+
+(defn reject-selected [state]
+  (assoc-in state [:dialog :mode] :browsing))
+
+(defn accept-selected [state]
+  (let [d (:dialog state)
+        offer (nth (:active-offers d) (:selected d))
+        idx (.indexOf (:cont-offers state) offer)
+        result (ct/accept-contract state idx)]
+    (if (:error result)
+      (assoc state :message (:error result))
+      (let [new-active (filterv :active (:cont-offers result))
+            sel (min (:selected d) (max 0 (dec (count new-active))))]
+        (assoc result :dialog
+               (assoc d :mode :browsing
+                        :active-offers new-active
+                        :selected sel))))))
 
 (defn open-dialog [state dialog-type & [opts]]
   (assoc state :dialog (merge {:type dialog-type :input "" :mode nil} opts)))
