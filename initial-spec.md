@@ -390,10 +390,12 @@ by uniform(0.90, 0.99)).
 
 ## Messages
 
-The game communicates through spoken dialog alerts delivered by one of the
-four neighbor faces. Each message category has a pool of variant strings
-selected at random. All messages are spoken aloud via speech synthesis using
-the voice settings of the delivering neighbor.
+The game communicates through dialog alerts. Every message in the game is
+spoken aloud using text-to-speech synthesis. Messages delivered by a neighbor
+use that neighbor's voice settings (rate and pitch); all other messages
+(opening speeches, win/loss announcements, trading dialogs, input errors,
+event narrations, etc.) use the default voice (rate 190, pitch 310). Each
+message category has a pool of variant strings selected at random.
 
 ### Neighbor Advice Messages
 
