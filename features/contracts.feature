@@ -221,3 +221,56 @@ Feature: Contracts
     When a SELL contract is fully fulfilled
     Then a random sell-completion message is shown from the pool
     # Pool contains ~10 variants, e.g. "This transaction was successfully concluded."
+
+  # -----------------------------------------------------------
+  # Contracts Dialog
+  # -----------------------------------------------------------
+
+  Scenario: Offers button opens contracts dialog
+    Given contract offers have been generated
+    When the player presses 'c'
+    Then a contracts dialog opens in browsing mode
+    And the first active offer is highlighted
+
+  Scenario: Arrow keys navigate offers
+    Given the contracts dialog is open in browsing mode
+    When the player presses the down arrow
+    Then the next offer is highlighted
+
+  Scenario: Navigation wraps around
+    Given the contracts dialog is open with 3 active offers
+    And the last offer is highlighted
+    When the player presses the down arrow
+    Then the first offer is highlighted
+
+  Scenario: Enter on an offer shows confirmation
+    Given the contracts dialog is open in browsing mode
+    When the player presses Enter
+    Then the dialog switches to confirming mode
+
+  Scenario: Accepting an offer moves it to pending
+    Given the contracts dialog is in confirming mode
+    When the player presses 'y'
+    Then the offer moves to pending contracts
+    And the dialog returns to browsing mode
+
+  Scenario: Rejecting an offer returns to browsing
+    Given the contracts dialog is in confirming mode
+    When the player presses 'n'
+    Then the dialog returns to browsing mode
+
+  Scenario: Esc from confirming returns to browsing
+    Given the contracts dialog is in confirming mode
+    When the player presses Esc
+    Then the dialog returns to browsing mode
+
+  Scenario: Esc from browsing closes dialog
+    Given the contracts dialog is open in browsing mode
+    When the player presses Esc
+    Then the contracts dialog closes
+
+  Scenario: Cannot accept when at max pending contracts
+    Given the player has 10 pending contracts
+    And the contracts dialog is in confirming mode for acceptance
+    When the player presses 'y'
+    Then the acceptance is rejected with an error

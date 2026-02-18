@@ -18,6 +18,7 @@
             [pharaoh.tables :as t]
             [pharaoh.trading :as tr]
             [pharaoh.ui.dialogs :as dlg]
+            [pharaoh.ui.input :as inp]
             [pharaoh.visits :as vis]
             [pharaoh.workload :as wk]))
 
@@ -973,18 +974,12 @@
     :handler (fn [w] (update w :state dlg/close-dialog))}
    {:type :when :pattern #"the player presses '([a-z])'"
     :handler (fn [w ch]
-               (let [dtype (get-in w [:state :dialog :type])
+               (let [w (ensure-rng w)
                      c (first ch)
-                     mode (case c
-                            \b (case dtype :buy-sell :buy :loan :borrow nil)
-                            \s (case dtype :buy-sell :sell nil)
-                            \r (case dtype :loan :repay nil)
-                            \h (case dtype :overseer :hire nil)
-                            \f (case dtype :overseer :fire nil)
-                            nil)]
-                 (if mode
-                   (update w :state dlg/set-dialog-mode mode)
-                   w)))}
+                     s (inp/handle-key (:rng w) (:state w) c)]
+                 (if (string? (:message s))
+                   (assoc w :state s :contract-rejected true)
+                   (assoc w :state s))))}
 
    {:type :then :pattern #"the dialog input contains \"(.+)\""
     :handler (fn [w expected]
@@ -1142,6 +1137,154 @@
     :handler (fn [w]
                (assert (not (:game-over (:state w)))
                        "Expected game to continue")
+               w)}
+
+   ;; ===== Contracts Dialog Steps =====
+   {:type :given :pattern #"contract offers have been generated"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (or (:state w) (st/initial-state))
+                     s (if (empty? (:players s))
+                         (assoc s :players (ct/make-players (:rng w)))
+                         s)
+                     s (ct/new-offers (:rng w) s)]
+                 (assoc w :state s)))}
+
+   {:type :given :pattern #"the contracts dialog is open in browsing mode"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (or (:state w) (st/initial-state))
+                     s (if (empty? (:players s))
+                         (assoc s :players (ct/make-players (:rng w)))
+                         s)
+                     s (if (empty? (:cont-offers s))
+                         (ct/new-offers (:rng w) s)
+                         s)
+                     s (dlg/open-contracts-dialog s)]
+                 (assoc w :state s)))}
+
+   {:type :given :pattern #"the contracts dialog is open with (\d+) active offers"
+    :handler (fn [w n]
+               (let [w (ensure-rng w)
+                     cnt (Integer/parseInt n)
+                     offers (vec (repeat cnt {:type :buy :who 0 :what :wheat
+                                              :amount 100.0 :price 1000.0
+                                              :duration 24 :active true :pct 0.0}))
+                     s (or (:state w) (st/initial-state))
+                     s (if (empty? (:players s))
+                         (assoc s :players (ct/make-players (:rng w)))
+                         s)
+                     s (assoc s :cont-offers offers)
+                     s (dlg/open-contracts-dialog s)]
+                 (assoc w :state s)))}
+
+   {:type :given :pattern #"the last offer is highlighted"
+    :handler (fn [w]
+               (let [n (count (get-in w [:state :dialog :active-offers]))]
+                 (assoc-in w [:state :dialog :selected] (dec n))))}
+
+   {:type :given :pattern #"the contracts dialog is in confirming mode"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (or (:state w) (st/initial-state))
+                     s (if (empty? (:players s))
+                         (assoc s :players (ct/make-players (:rng w)))
+                         s)
+                     s (if (empty? (:cont-offers s))
+                         (ct/new-offers (:rng w) s)
+                         s)
+                     s (dlg/open-contracts-dialog s)
+                     s (dlg/confirm-selected s)]
+                 (assoc w :state s)))}
+
+   {:type :given :pattern #"the contracts dialog is in confirming mode for acceptance"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (:state w)
+                     s (if (empty? (:players s))
+                         (assoc s :players (ct/make-players (:rng w)))
+                         s)
+                     offers (vec (repeat 15 {:type :buy :who 0 :what :wheat
+                                             :amount 100.0 :price 1000.0
+                                             :duration 24 :active true :pct 0.0}))
+                     s (assoc s :cont-offers offers)
+                     s (dlg/open-contracts-dialog s)
+                     s (dlg/confirm-selected s)]
+                 (assoc w :state s)))}
+
+   {:type :when :pattern #"the player presses the down arrow"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (inp/handle-key (:rng w) (:state w) (char 0xFFFF) :down)]
+                 (assoc w :state s)))}
+
+   {:type :when :pattern #"the player presses Enter"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (inp/handle-key (:rng w) (:state w) \return)]
+                 (assoc w :state s)))}
+
+   {:type :when :pattern #"the player presses Esc"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (inp/handle-key (:rng w) (:state w) (char 27))]
+                 (assoc w :state s)))}
+
+   {:type :then :pattern #"a contracts dialog opens in browsing mode"
+    :handler (fn [w]
+               (assert (= :contracts (get-in w [:state :dialog :type]))
+                       (str "Expected contracts dialog, got " (get-in w [:state :dialog :type])))
+               (assert (= :browsing (get-in w [:state :dialog :mode]))
+                       (str "Expected browsing mode, got " (get-in w [:state :dialog :mode])))
+               w)}
+
+   {:type :then :pattern #"the first active offer is highlighted"
+    :handler (fn [w]
+               (assert (= 0 (get-in w [:state :dialog :selected]))
+                       (str "Expected selected 0, got " (get-in w [:state :dialog :selected])))
+               w)}
+
+   {:type :then :pattern #"the next offer is highlighted"
+    :handler (fn [w]
+               (assert (= 1 (get-in w [:state :dialog :selected]))
+                       (str "Expected selected 1, got " (get-in w [:state :dialog :selected])))
+               w)}
+
+   {:type :then :pattern #"the first offer is highlighted"
+    :handler (fn [w]
+               (assert (= 0 (get-in w [:state :dialog :selected]))
+                       (str "Expected selected 0, got " (get-in w [:state :dialog :selected])))
+               w)}
+
+   {:type :then :pattern #"the dialog switches to confirming mode"
+    :handler (fn [w]
+               (assert (= :confirming (get-in w [:state :dialog :mode]))
+                       (str "Expected confirming mode, got " (get-in w [:state :dialog :mode])))
+               w)}
+
+   {:type :then :pattern #"the offer moves to pending contracts"
+    :handler (fn [w]
+               (assert (pos? (count (:cont-pend (:state w))))
+                       "Expected at least one pending contract")
+               w)}
+
+   {:type :then :pattern #"the dialog returns to browsing mode"
+    :handler (fn [w]
+               (assert (= :browsing (get-in w [:state :dialog :mode]))
+                       (str "Expected browsing mode, got " (get-in w [:state :dialog :mode])))
+               w)}
+
+   {:type :then :pattern #"the contracts dialog closes"
+    :handler (fn [w]
+               (assert (nil? (get-in w [:state :dialog]))
+                       "Expected dialog to be nil")
+               w)}
+
+   {:type :then :pattern #"the acceptance is rejected with an error"
+    :handler (fn [w]
+               (assert (or (:contract-rejected w)
+                           (string? (:message (:state w))))
+                       "Expected contract rejection error")
                w)}
 
    ;; ===== Catch-all =====
