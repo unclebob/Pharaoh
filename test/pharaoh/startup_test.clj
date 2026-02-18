@@ -1,6 +1,8 @@
 (ns pharaoh.startup-test
   (:require [clojure.test :refer :all]
             [pharaoh.startup :as su]
+            [pharaoh.contracts :as ct]
+            [pharaoh.random :as r]
             [pharaoh.state :as st]))
 
 ;; --- difficulty-for-key ---
@@ -61,12 +63,12 @@
 ;; --- select-difficulty ---
 
 (deftest select-difficulty-sets-screen-to-game
-  (let [app {:state (st/initial-state) :screen :difficulty}
+  (let [app {:state (st/initial-state) :screen :difficulty :rng (r/make-rng 1)}
         result (su/select-difficulty app "Normal")]
     (is (= :game (:screen result)))))
 
 (deftest select-easy-applies-settings
-  (let [app {:state (st/initial-state) :screen :difficulty}
+  (let [app {:state (st/initial-state) :screen :difficulty :rng (r/make-rng 1)}
         result (su/select-difficulty app "Easy")
         s (:state result)]
     (is (== 115.47 (:py-base s)))
@@ -74,7 +76,7 @@
     (is (== 0.15 (:world-growth s)))))
 
 (deftest select-normal-applies-settings
-  (let [app {:state (st/initial-state) :screen :difficulty}
+  (let [app {:state (st/initial-state) :screen :difficulty :rng (r/make-rng 1)}
         result (su/select-difficulty app "Normal")
         s (:state result)]
     (is (== 346.41 (:py-base s)))
@@ -82,7 +84,7 @@
     (is (== 0.10 (:world-growth s)))))
 
 (deftest select-hard-applies-settings
-  (let [app {:state (st/initial-state) :screen :difficulty}
+  (let [app {:state (st/initial-state) :screen :difficulty :rng (r/make-rng 1)}
         result (su/select-difficulty app "Hard")
         s (:state result)]
     (is (== 1154.7 (:py-base s)))))
@@ -92,3 +94,17 @@
         result (su/select-difficulty app nil)]
     (is (= :difficulty (:screen result)))
     (is (= (:state app) (:state result)))))
+
+;; --- player and offer initialization ---
+
+(deftest select-difficulty-initializes-players
+  (let [rng (r/make-rng 42)
+        app {:state (st/initial-state) :screen :difficulty :rng rng}
+        result (su/select-difficulty app "Normal")]
+    (is (= 10 (count (get-in result [:state :players]))))))
+
+(deftest select-difficulty-generates-initial-offers
+  (let [rng (r/make-rng 42)
+        app {:state (st/initial-state) :screen :difficulty :rng rng}
+        result (su/select-difficulty app "Normal")]
+    (is (= 15 (count (get-in result [:state :cont-offers]))))))

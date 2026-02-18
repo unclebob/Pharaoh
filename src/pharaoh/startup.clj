@@ -1,5 +1,6 @@
 (ns pharaoh.startup
-  (:require [pharaoh.state :as st]
+  (:require [pharaoh.contracts :as ct]
+            [pharaoh.state :as st]
             [pharaoh.ui.layout :as lay]))
 
 (def ^:private btn-w 500)
@@ -35,7 +36,11 @@
 
 (defn select-difficulty [app difficulty]
   (if difficulty
-    (-> app
-        (update :state st/set-difficulty difficulty)
-        (assoc :screen :game))
+    (let [rng (:rng app)
+          state (-> (:state app)
+                    (st/set-difficulty difficulty)
+                    (assoc :players (ct/make-players rng)))]
+      (-> app
+          (assoc :state (ct/new-offers rng state))
+          (assoc :screen :game)))
     app))
