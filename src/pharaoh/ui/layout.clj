@@ -49,6 +49,6 @@
 ;; Keyboard shortcuts
 (def key-commands
   {\w :wheat \s :slaves \o :oxen \h :horses \m :manure
-   \l :land \f :feed \p :plant \q :pyramid-quota
-   \L :loan \O :overseers \S :spread \H :harvest
+   \l :land \f :spread \p :plant \q :pyramid-quota
+   \L :loan \g :overseers \S :slave-feed \O :oxen-feed \H :horse-feed
    \r :run \R :run})

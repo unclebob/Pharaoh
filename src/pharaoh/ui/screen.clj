@@ -179,12 +179,13 @@
       (q/text (str "Yr " (:year s) " Mo " (:month s))
               (+ x 4) (+ y lay/small-size 4)))
 
-    ;; Message bar (row 24)
+    ;; Message bar (row 24) — plain string messages only
     (when-let [msg (:message s)]
-      (let [{:keys [x y w h]} (lay/cell-rect-span 0 24 10 1)]
-        (q/fill 255 255 220)
-        (q/stroke 200)
-        (q/rect x y w h)
-        (q/fill 0)
-        (q/text-size lay/label-size)
-        (q/text (str msg) (+ x 4) (+ y lay/label-size 4))))))
+      (when (string? msg)
+        (let [{:keys [x y w h]} (lay/cell-rect-span 0 24 10 1)]
+          (q/fill 255 255 220)
+          (q/stroke 200)
+          (q/rect x y w h)
+          (q/fill 0)
+          (q/text-size lay/label-size)
+          (q/text msg (+ x 4) (+ y lay/label-size 4)))))))

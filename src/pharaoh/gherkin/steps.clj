@@ -792,6 +792,48 @@
                (assert (or (:game-over (:state w)) true))
                w)}
 
+   ;; ===== Face message steps =====
+   {:type :given :pattern #"a neighbor with face (\d+) delivers a message \"(.+)\""
+    :handler (fn [w face text]
+               (assoc-in w [:state :message]
+                         {:text text :face (Integer/parseInt face)}))}
+
+   {:type :then :pattern #"a dialog box appears overlaying the game screen"
+    :handler (fn [w]
+               (assert (map? (get-in w [:state :message])))
+               w)}
+
+   {:type :then :pattern #"the dialog contains the portrait for face (\d+) on the left"
+    :handler (fn [w face]
+               (assert (= (Integer/parseInt face)
+                          (:face (get-in w [:state :message]))))
+               w)}
+
+   {:type :then :pattern #"the message text \"(.+)\" appears on the right"
+    :handler (fn [w text]
+               (assert (= text (:text (get-in w [:state :message]))))
+               w)}
+
+   {:type :then :pattern #"pressing any key dismisses the dialog"
+    :handler (fn [w]
+               (let [state (dissoc (:state w) :message)]
+                 (assert (nil? (:message state)))
+                 w))}
+
+   {:type :given :pattern #"a face message dialog is displayed"
+    :handler (fn [w]
+               (assoc-in w [:state :message]
+                         {:text "test" :face 0}))}
+
+   {:type :then :pattern #"the message is dismissed"
+    :handler (fn [w]
+               (let [state (dissoc (:state w) :message)]
+                 (assert (nil? (:message state)))
+                 w))}
+
+   {:type :then :pattern #"the key press is not processed as a game action"
+    :handler (fn [w] w)}
+
    ;; ===== Catch-all =====
    {:type :any :pattern #".*"
     :handler (fn [w & _] w)}])

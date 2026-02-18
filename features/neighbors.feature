@@ -190,3 +190,25 @@ Feature: Neighbors
     When any neighbor message is displayed
     Then the message text is spoken using the delivering neighbor's voice settings
     And the message appears in a dialog box with the neighbor's face
+
+  # -----------------------------------------------------------
+  # Character Portraits
+  # -----------------------------------------------------------
+
+  Scenario: Character portraits loaded from PNG files
+    Given the game starts
+    Then four portrait images are loaded from resources/faces/man1.png through man4.png
+    And each portrait is a black-and-white bitmap extracted from the original resource fork
+
+  Scenario: Face message dialog displays portrait and text
+    Given a neighbor with face 2 delivers a message "Your oxen look starved."
+    Then a dialog box appears overlaying the game screen
+    And the dialog contains the portrait for face 2 on the left
+    And the message text "Your oxen look starved." appears on the right
+    And pressing any key dismisses the dialog
+
+  Scenario: Face messages block other key actions until dismissed
+    Given a face message dialog is displayed
+    When the player presses any key
+    Then the message is dismissed
+    And the key press is not processed as a game action

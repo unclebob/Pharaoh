@@ -95,40 +95,61 @@ section for readability. Below is a wireframe:
 
 | Key | Action               | Key | Action               |
 |-----|----------------------|-----|----------------------|
-| `l` | Buy/sell land        | `L` | Borrow/repay loan    |
-| `w` | Buy/sell wheat       | `O` | Set oxen feed rate   |
-| `s` | Buy/sell slaves      | `S` | Set slave feed rate  |
+| `w` | Buy/sell wheat       | `S` | Set slave feed rate  |
+| `s` | Buy/sell slaves      | `O` | Set oxen feed rate   |
 | `o` | Buy/sell oxen        | `H` | Set horse feed rate  |
 | `h` | Buy/sell horses      | `p` | Set acres to plant   |
 | `m` | Buy/sell manure      | `f` | Set manure to spread |
-| `g` | Hire/fire overseers  | `q` | Set pyramid quota    |
-| `r` | Run for one month    |     |                      |
+| `l` | Buy/sell land        | `q` | Set pyramid quota    |
+| `L` | Borrow/repay loan    | `g` | Hire/fire overseers  |
+| `r` | Run for one month    | Esc | Close dialog         |
+
+All dialogs show their keyboard shortcut in parentheses after the title,
+e.g. `buy-sell wheat (w)`.
 
 ### Mouse
 
-Click on any value cell to invoke the appropriate dialog. Click **Run** to
-advance one month; click **Quit** to exit.
+Click on any section to open the corresponding dialog:
+
+| Section        | Click action                                  |
+|----------------|-----------------------------------------------|
+| Commodities    | Buy/sell dialog for the clicked commodity row  |
+| Prices         | Buy/sell dialog for the clicked commodity row  |
+| Feed Rates     | Feed dialog for slaves (row 1), oxen (row 2), or horses (row 3) |
+| Overseers      | Hire/fire overseers dialog                     |
+| Loan           | Borrow/repay loan dialog                       |
+| Land           | Buy/sell land dialog                           |
+| Spread & Plant | Spread dialog (left column) or plant dialog (right column) |
+| Gold           | Borrow/repay loan dialog                       |
+| Pyramid        | Set pyramid stone quota dialog                 |
+| Run button     | Advance one month                              |
+| Quit button    | Exit the game                                  |
 
 ### Buy/Sell Dialog
 
-Select a function via radio button or keystroke:
+Select a function via keystroke:
 - `b` = Buy
 - `s` = Sell
-- `k` = Keep (buy or sell to reach a target quantity)
-- `a` = Acquire (same as Keep)
 
-Then enter the desired amount and confirm.
+Then enter the desired amount and press Enter to confirm, or Esc to cancel.
 
 ### Overseer Dialog
 
 - `h` = Hire
 - `f` = Fire
-- `o` = Obtain (hire or fire to reach a target headcount)
+
+Then enter the number and press Enter to confirm, or Esc to cancel.
 
 ### Loan Dialog
 
 - `b` = Borrow
 - `r` = Repay
+
+Then enter the amount and press Enter to confirm, or Esc to cancel.
+
+### Feed / Plant / Spread / Pyramid Dialogs
+
+Enter the desired amount and press Enter to confirm, or Esc to cancel.
 
 ### Contracts Menu
 
@@ -361,6 +382,14 @@ shuffled at the start of each new game:
 - **The Banker** -- Visits with increasing frequency as the bank grows
   concerned about outstanding debt.
 
+Each neighbor has a distinct face (portrait bitmap) extracted from the original
+game's resource fork. The four portraits are stored as PNG files in
+`resources/faces/man1.png` through `man4.png` (see Appendix A). At game start,
+faces 0-3 are randomly assigned to the four personalities so that no two share
+the same face. When a neighbor delivers a message, the message appears in a
+dialog box overlaying the game screen with the neighbor's portrait displayed
+alongside the message text.
+
 Neighbors also deliver idle messages during periods of player inactivity and
 occasionally drop in for "chats" containing hints or misdirection.
 
@@ -396,9 +425,11 @@ by uniform(0.90, 0.99)).
 
 The game communicates through dialog alerts. Every message in the game is
 spoken aloud using text-to-speech synthesis. Messages delivered by a neighbor
-use that neighbor's voice settings (rate and pitch); all other messages
-(opening speeches, win/loss announcements, trading dialogs, input errors,
-event narrations, etc.) use the default voice (rate 190, pitch 310). Each
+use that neighbor's voice settings (rate and pitch) and display the neighbor's
+portrait in a dialog box (see Appendix A for portrait images); all other
+messages (opening speeches, win/loss announcements, trading dialogs, input
+errors, event narrations, etc.) use the default voice (rate 190, pitch 310)
+and appear as a simple text bar. Each
 message category has a pool of variant strings selected at random.
 
 ### Neighbor Advice Messages
@@ -1783,3 +1814,25 @@ Repayment sign-offs:
 - "They don't let real kings just quit like that you know. Do you want to save your game."
 - "It might be a good idea to save your game now."
 - "I L B C N U. Save game?"
+
+---
+
+## Appendix A: Character Portraits
+
+The four neighbor character portraits were extracted from the original Pharaoh
+1.2 resource fork (PICT resources). They are black-and-white bitmap images:
+
+| File | PICT Resource ID | Dimensions | Description |
+|------|-----------------|------------|-------------|
+| `resources/faces/man1.png` | 31196 | 76 x 94 px | Man 1 portrait |
+| `resources/faces/man2.png` | 25883 | 71 x 82 px | Man 2 portrait |
+| `resources/faces/man3.png` | 16599 | 44 x 68 px | Man 3 portrait |
+| `resources/faces/man4.png` | 32536 | 37 x 60 px | Man 4 portrait |
+
+![Man 1](resources/faces/man1.png) ![Man 2](resources/faces/man2.png)
+![Man 3](resources/faces/man3.png) ![Man 4](resources/faces/man4.png)
+
+These portraits are loaded at game startup and displayed in the message dialog
+whenever a neighbor delivers a message. The face number (0-3) is assigned
+randomly to each personality role (banker, good guy, bad guy, village idiot) at
+the start of each game.
