@@ -45,7 +45,7 @@ section for readability. Below is a wireframe:
 | Fallow  Planted Growing Ripe  Total | Manure Land | Cur Gold  d%     Old Gold        |
 | [val]   [val]   [val]   [val] [val] | [val] [val] | [value] [d%]    [old]            |
 +--------------------------------------+-------------+---------------------------------+
-+----Pyramid----+-------------------Pending Contracts-------------------+
++----Pyramid----+---Contracts (pending)------- [Offers (c)] -+
 | StoneQt Stones| contract 1 text ...                                   |
 | [quota] [cnt] | contract 2 text ...                                   |
 |         Hght  | contract 3 text ...                                   |
@@ -82,7 +82,8 @@ section for readability. Below is a wireframe:
   Clickable to adjust.
 - **Overseers** -- Number employed and monthly salary per overseer. Clickable
   to hire or fire.
-- **Pending Contracts** -- Active contracts with neighboring kings (read-only).
+- **Contracts** -- Active contracts with neighboring kings. An "Offers" button
+  opens a dialog to browse and accept new contract offers from neighboring rulers.
 - **Pyramid** -- A graphical rendering of the pyramid, plus stone count,
   current height, and monthly stone quota. Quota cell is clickable.
 - **Run / Quit** -- Rounded-rect buttons to advance one month or exit.
@@ -103,6 +104,7 @@ section for readability. Below is a wireframe:
 | `l` | Buy/sell land        | `q` | Set pyramid quota    |
 | `L` | Borrow/repay loan    | `g` | Hire/fire overseers  |
 | `r` | Run for one month    | Esc | Close dialog         |
+| `c` | Browse contract offers |    |                      |
 
 All dialogs show their keyboard shortcut in parentheses after the title,
 e.g. `buy-sell wheat (w)`.
@@ -121,6 +123,7 @@ Click on any section to open the corresponding dialog:
 | Land           | Buy/sell land dialog                           |
 | Spread & Plant | Spread dialog (left column) or plant dialog (right column) |
 | Gold           | Borrow/repay loan dialog                       |
+| Contracts      | Opens contract offers dialog (Offers button)   |
 | Pyramid        | Set pyramid stone quota dialog                 |
 | Run button     | Advance one month                              |
 | Quit button    | Exit the game                                  |
@@ -153,15 +156,16 @@ Enter the desired amount and press Enter to confirm, or Esc to cancel.
 
 ### Contracts Menu
 
-Select from offered contracts via the Contracts pull-down menu. Confirm to
-commit. There is no way to cancel a committed contract.
+Click the "Offers" button in the contracts section header (or press `c`) to
+browse available contract offers in a dialog. Select an offer and confirm
+to commit. There is no way to cancel a committed contract.
 
 ---
 
 ## Dialog Wireframes
 
 All dialogs overlay the main game screen. There are two dialog types:
-**action dialogs** (buy/sell, feed, loan, overseer, plant, spread, pyramid)
+**action dialogs** (buy/sell, feed, loan, overseer, plant, spread, pyramid, contracts)
 and **face message dialogs** (neighbor visits, idle messages, dunning notices).
 
 ### Action Dialog
@@ -286,6 +290,21 @@ rounded-corner rectangle spanning grid cells (1, 8) through (8, 11) —
 At game start, faces 0-3 are randomly assigned to the four personality
 roles (Good Guy, Bad Guy, Village Idiot, Banker). The face message dialog
 always uses the assigned face for the delivering neighbor.
+
+### Contracts Dialog
+
+The contracts dialog appears as a rounded-corner rectangle spanning grid cells
+(2, 5) through (8, 18) — 7 columns wide by 14 rows tall. It has two modes:
+
+**Browsing mode:** Shows a scrollable list of available contract offers. Each
+line shows: player name, BUY/SELL, amount, commodity, price, and duration.
+The currently highlighted offer has a light blue background. Up/Down arrows
+navigate, Enter selects the highlighted offer, Esc closes the dialog.
+
+**Confirming mode:** Shows a confirmation prompt: "Will you buy/sell [amount]
+[commodity] from/to [player] for [price] gold in [duration] months?"
+Press y to accept (moves the offer to pending contracts), n or Esc to reject
+and return to browsing mode.
 
 ### Difficulty Selection Screen
 
