@@ -13,12 +13,23 @@
   (mapv #(q/load-image (str "resources/faces/man" (inc %) ".png"))
         (range 4)))
 
+(defn- load-icons []
+  {:buy-sell  (q/load-image "resources/images/icon_buysell.png")
+   :feed      (q/load-image "resources/images/icon_feed.png")
+   :overseer  (q/load-image "resources/images/icon_overseers.png")
+   :plant     (q/load-image "resources/images/icon_plant.png")
+   :spread    (q/load-image "resources/images/icon_manure.png")
+   :loan      (q/load-image "resources/images/icon_loan.png")
+   :pyramid   (q/load-image "resources/images/icon_pyramid.png")
+   :event     (q/load-image "resources/images/icon_event.png")})
+
 (defn- setup []
   (q/frame-rate 30)
   (q/text-font (q/create-font "Monospaced" lay/value-size))
   {:state (st/initial-state)
    :rng (r/make-rng (System/currentTimeMillis))
-   :faces (load-faces)})
+   :faces (load-faces)
+   :icons (load-icons)})
 
 (defn- dialog-shortcut [d]
   (case (:type d)
@@ -41,28 +52,33 @@
     :pyramid "Enter stones, Enter=ok  Esc=cancel"
     "Enter=ok  Esc=cancel"))
 
-(defn- draw-dialog [state]
+(defn- draw-dialog [state icons]
   (when-let [d (:dialog state)]
     (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
           key-hint (dialog-shortcut d)
           title (str (name (:type d))
                      (when (:commodity d) (str " " (name (:commodity d))))
                      (when key-hint (str " (" key-hint ")"))
-                     (when (:mode d) (str " [" (name (:mode d)) "]")))]
+                     (when (:mode d) (str " [" (name (:mode d)) "]")))
+          icon (get icons (:type d))
+          icon-size (int (* h 0.4))
+          text-x (if icon (+ x icon-size 16) (+ x 8))]
       (q/fill 245 245 255)
       (q/stroke 100)
       (q/stroke-weight 2)
       (q/rect x y w h 5)
       (q/stroke-weight 1)
+      (when icon
+        (q/image icon (+ x 8) (+ y 8) icon-size icon-size))
       (q/fill 0)
       (q/text-size lay/title-size)
-      (q/text title (+ x 8) (+ y lay/title-size 8))
+      (q/text title text-x (+ y lay/title-size 8))
       (q/fill 0)
       (q/text-size lay/value-size)
-      (q/text (str "Amount: " (:input d)) (+ x 8) (+ y (* lay/value-size 3) 8))
+      (q/text (str "Amount: " (:input d)) text-x (+ y (* lay/value-size 3) 8))
       (q/text-size lay/small-size)
       (q/fill 100)
-      (q/text (dialog-help d) (+ x 8) (+ y (* lay/value-size 5) 8)))))
+      (q/text (dialog-help d) text-x (+ y (* lay/value-size 5) 8)))))
 
 (defn- draw-face-message [msg faces]
   (let [text (:text msg)
@@ -89,9 +105,9 @@
     (q/text-size lay/small-size)
     (q/text "[press any key]" text-x (+ y h -16))))
 
-(defn- draw [{:keys [state faces]}]
+(defn- draw [{:keys [state faces icons]}]
   (scr/draw-screen state)
-  (draw-dialog state)
+  (draw-dialog state icons)
   (when-let [msg (:message state)]
     (when (map? msg) (draw-face-message msg faces))))
 
