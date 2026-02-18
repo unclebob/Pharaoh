@@ -170,13 +170,13 @@
       (when-let [msg (:message state)]
         (when (map? msg) (draw-face-message msg faces))))))
 
-(defn- key-pressed [{:keys [screen] :as app} {:keys [raw-key]}]
+(defn- key-pressed [{:keys [screen] :as app} {:keys [raw-key key]}]
   (set! (.key (quil.applet/current-applet)) (char 0))
   (if (= :difficulty screen)
     (if (= (int raw-key) 27)
       (do (q/exit) app)
       (su/select-difficulty app (su/difficulty-for-key raw-key)))
-    (assoc app :state (inp/handle-key (:rng app) (:state app) raw-key))))
+    (assoc app :state (inp/handle-key (:rng app) (:state app) raw-key key))))
 
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
   (if (= :difficulty screen)

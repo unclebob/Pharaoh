@@ -406,3 +406,91 @@
     (is (nil? (:dialog result)))
     (is (nil? (:run-clicked result)))
     (is (nil? (:quit-clicked result)))))
+
+;; ---- contracts dialog key handling ----
+
+(def test-offers
+  (vec (repeat 5 {:type :buy :who 0 :what :wheat
+                   :amount 100.0 :price 1000.0
+                   :duration 24 :active true :pct 0.0})))
+
+(deftest c-key-opens-contracts-dialog
+  (let [state (assoc (st/initial-state) :cont-offers test-offers)
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state \c)]
+    (is (= :contracts (get-in result [:dialog :type])))))
+
+(deftest arrow-down-navigates-contracts-dialog
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state \uFFFF :down)]
+    (is (= 1 (get-in result [:dialog :selected])))))
+
+(deftest arrow-up-navigates-contracts-dialog
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state \uFFFF :up)]
+    (is (= 4 (get-in result [:dialog :selected])))))
+
+(deftest enter-in-browsing-mode-confirms
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers
+                         :players [{:name "Test"}])
+                  (dlg/open-contracts-dialog))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state \return)]
+    (is (= :confirming (get-in result [:dialog :mode])))))
+
+(deftest y-in-confirming-mode-accepts
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers
+                         :players [{:name "Test"}]
+                         :cont-pend [])
+                  (dlg/open-contracts-dialog)
+                  (dlg/confirm-selected))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state \y)]
+    (is (= 1 (count (:cont-pend result))))
+    (is (= :browsing (get-in result [:dialog :mode])))))
+
+(deftest n-in-confirming-mode-rejects
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers
+                         :players [{:name "Test"}]
+                         :cont-pend [])
+                  (dlg/open-contracts-dialog)
+                  (dlg/confirm-selected))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state \n)]
+    (is (= :browsing (get-in result [:dialog :mode])))
+    (is (empty? (:cont-pend result)))))
+
+(deftest esc-from-confirming-returns-to-browsing
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers
+                         :players [{:name "Test"}])
+                  (dlg/open-contracts-dialog)
+                  (dlg/confirm-selected))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state esc-char)]
+    (is (= :browsing (get-in result [:dialog :mode])))))
+
+(deftest esc-from-browsing-closes-dialog
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog))
+        rng (r/make-rng 42)
+        result (inp/handle-key rng state esc-char)]
+    (is (nil? (:dialog result)))))
+
+;; ---- contracts mouse click ----
+
+(deftest clicking-contracts-section-opens-dialog
+  (let [state (assoc (st/initial-state) :cont-offers test-offers)
+        [mx my] (click-coords 5 11)
+        result (inp/handle-mouse state mx my)]
+    (is (= :contracts (get-in result [:dialog :type])))))

@@ -24,7 +24,8 @@
    \q #(dlg/open-dialog % :pyramid)
    \S #(open-feed % :slaves)
    \O #(open-feed % :oxen)
-   \H #(open-feed % :horses)})
+   \H #(open-feed % :horses)
+   \c #(dlg/open-contracts-dialog %)})
 
 (def esc-char (char 27))
 
@@ -37,20 +38,47 @@
     \f (case dtype :overseer :fire nil)
     nil))
 
-(defn- handle-dialog-key [rng state key-char]
-  (cond
-    (= key-char esc-char) (dlg/close-dialog state)
-    (or (= key-char \return) (= key-char \newline))
-    (dlg/execute-dialog rng (dissoc state :message))
-    :else
-    (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
-      (dlg/set-dialog-mode state mode)
-      (dlg/update-dialog-input state key-char))))
+(defn- handle-contracts-key [state key-char key-kw]
+  (let [mode (get-in state [:dialog :mode])]
+    (cond
+      (= key-char esc-char)
+      (if (= mode :confirming)
+        (dlg/reject-selected state)
+        (dlg/close-dialog state))
 
-(defn handle-key [rng state key-char]
+      (and (= mode :browsing) (or (= key-char \return) (= key-char \newline)))
+      (dlg/confirm-selected state)
+
+      (and (= mode :confirming) (= key-char \y))
+      (dlg/accept-selected state)
+
+      (and (= mode :confirming) (= key-char \n))
+      (dlg/reject-selected state)
+
+      (and (= mode :browsing) (= key-kw :down))
+      (dlg/navigate-contracts state :down)
+
+      (and (= mode :browsing) (= key-kw :up))
+      (dlg/navigate-contracts state :up)
+
+      :else state)))
+
+(defn- handle-dialog-key [rng state key-char key-kw]
+  (if (= :contracts (get-in state [:dialog :type]))
+    (handle-contracts-key state key-char key-kw)
+    (cond
+      (= key-char esc-char) (dlg/close-dialog state)
+      (or (= key-char \return) (= key-char \newline))
+      (dlg/execute-dialog rng (dissoc state :message))
+      :else
+      (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
+        (dlg/set-dialog-mode state mode)
+        (dlg/update-dialog-input state key-char)))))
+
+(defn handle-key [rng state key-char & [key-kw]]
   (cond
     (:dialog state)
-    (handle-dialog-key rng state key-char)
+    (handle-dialog-key rng state key-char key-kw)
 
     (map? (:message state))
     (dissoc state :message)
@@ -128,5 +156,9 @@
       ;; Pyramid section
       (in-section? col row :pyramid)
       (dlg/open-dialog state :pyramid)
+
+      ;; Contracts section
+      (in-section? col row :contracts)
+      (dlg/open-contracts-dialog state)
 
       :else state)))
