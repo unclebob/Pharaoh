@@ -97,7 +97,7 @@
 (defn- fmt-offer [offer players]
   (let [name (get-in players [(:who offer) :name] "?")
         verb (if (= :buy (:type offer)) "BUY" "SELL")]
-    (format "%s: %s %.0f %s @ %.1fg %dmo"
+    (format "%s: %s %.0f %s @ %.0f gold %dmo"
             name verb (:amount offer)
             (clojure.core/name (:what offer))
             (:price offer) (:duration offer))))

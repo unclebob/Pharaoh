@@ -79,3 +79,22 @@
 (deftest delta-pct-fractional-result
   ;; 33/100 = 33% increase, rounded to 0 decimals
   (is (= "+33%" (delta-pct 133.0 100.0))))
+
+;; ---- fmt-pending ----
+
+(def fmt-pending #'pharaoh.ui.screen/fmt-pending)
+
+(deftest fmt-pending-buy-with-months-left
+  (let [c {:type :buy :amount 100.0 :what :wheat
+           :price 1000.0 :months-left 12}]
+    (is (= "buy 100 wheat @ 1000 gold 12mo" (fmt-pending c)))))
+
+(deftest fmt-pending-sell-with-months-left
+  (let [c {:type :sell :amount 50.0 :what :slaves
+           :price 5000.0 :months-left 6}]
+    (is (= "sell 50 slaves @ 5000 gold 6mo" (fmt-pending c)))))
+
+(deftest fmt-pending-falls-back-to-duration
+  (let [c {:type :buy :amount 200.0 :what :oxen
+           :price 300.0 :duration 24}]
+    (is (= "buy 200 oxen @ 300 gold 24mo" (fmt-pending c)))))

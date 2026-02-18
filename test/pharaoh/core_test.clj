@@ -12,21 +12,21 @@
   (let [offer {:type :buy :who 0 :what :wheat
                :amount 100.0 :price 10.0 :duration 24}
         players [{:name "King HamuNam"}]]
-    (is (= "King HamuNam: BUY 100 wheat @ 10.0g 24mo"
+    (is (= "King HamuNam: BUY 100 wheat @ 10 gold 24mo"
            (fmt-offer offer players)))))
 
 (deftest fmt-offer-sell-contract
   (let [offer {:type :sell :who 1 :what :slaves
                :amount 50.0 :price 5000.0 :duration 12}
         players [{:name "P1"} {:name "Queen Nefi"}]]
-    (is (= "Queen Nefi: SELL 50 slaves @ 5000.0g 12mo"
+    (is (= "Queen Nefi: SELL 50 slaves @ 5000 gold 12mo"
            (fmt-offer offer players)))))
 
 (deftest fmt-offer-unknown-player
   (let [offer {:type :buy :who 5 :what :oxen
                :amount 200.0 :price 300.0 :duration 36}
         players [{:name "Only One"}]]
-    (is (= "?: BUY 200 oxen @ 300.0g 36mo"
+    (is (= "?: BUY 200 oxen @ 300 gold 36mo"
            (fmt-offer offer players)))))
 
 ;; ---- fmt-confirm ----

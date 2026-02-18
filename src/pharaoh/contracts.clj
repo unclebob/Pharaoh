@@ -91,7 +91,8 @@
         (-> state
             (update :cont-offers assoc offer-idx
                     (assoc offer :active false))
-            (update :cont-pend conj offer))))))
+            (update :cont-pend conj
+                    (assoc offer :months-left (:duration offer))))))))
 
 (defn- monthly-amount [contract]
   (/ (:amount contract) (:duration contract)))
@@ -116,7 +117,9 @@
             {:state (-> state
                         (update ptr + ship-amt)
                         (update :gold - cost))
-             :contract (update contract :pct + (/ 1.0 (:duration contract)))})
+             :contract (-> contract
+                          (update :pct + (/ 1.0 (:duration contract)))
+                          (update :months-left #(some-> % dec)))})
           ;; SELL: player ships goods, counterparty pays
           (let [available (get state ptr 0.0)
                 ship-amt (min monthly available)
@@ -126,7 +129,9 @@
             {:state (-> state
                         (update ptr - ship-amt)
                         (update :gold + income))
-             :contract (update contract :pct + (/ 1.0 (:duration contract)))}))))))
+             :contract (-> contract
+                          (update :pct + (/ 1.0 (:duration contract)))
+                          (update :months-left #(some-> % dec)))}))))))
 
 (defn contract-progress [rng state]
   (let [players (:players state)]

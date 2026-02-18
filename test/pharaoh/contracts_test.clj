@@ -101,6 +101,34 @@
         result (ct/fulfill-contract rng state contract [player])]
     (is (not (:active (:contract result))))))
 
+(deftest accept-contract-sets-months-left
+  (let [offer {:type :buy :who 0 :what :wheat :amount 100.0
+               :price 10.0 :duration 24 :active true :pct 0.0}
+        state (assoc (st/initial-state) :cont-offers [offer] :cont-pend [])
+        result (ct/accept-contract state 0)
+        pending (first (:cont-pend result))]
+    (is (= 24 (:months-left pending)))))
+
+(deftest fulfill-buy-contract-decrements-months-left
+  (let [rng (r/make-rng 42)
+        player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
+        contract {:type :buy :who 0 :what :wheat :amount 120.0
+                  :price 10.0 :duration 12 :active true :pct 0.0
+                  :months-left 12}
+        state (assoc (st/initial-state) :gold 50000.0 :wheat 100.0)
+        result (ct/fulfill-contract rng state contract [player])]
+    (is (= 11 (:months-left (:contract result))))))
+
+(deftest fulfill-sell-contract-decrements-months-left
+  (let [rng (r/make-rng 42)
+        player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
+        contract {:type :sell :who 0 :what :wheat :amount 120.0
+                  :price 10.0 :duration 12 :active true :pct 0.0
+                  :months-left 12}
+        state (assoc (st/initial-state) :gold 50000.0 :wheat 500.0)
+        result (ct/fulfill-contract rng state contract [player])]
+    (is (= 11 (:months-left (:contract result))))))
+
 (deftest contract-progress-processes-all-pending
   (let [rng (r/make-rng 42)
         players (ct/make-players (r/make-rng 1))

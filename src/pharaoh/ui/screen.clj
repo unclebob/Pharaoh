@@ -10,6 +10,13 @@
 
 (defn- fmt [x] (format "%.0f" (double x)))
 (defn- fmt1 [x] (format "%.1f" (double x)))
+(defn- fmt-pending [c]
+  (let [months (or (:months-left c) (:duration c))]
+    (format "%s %s %s @ %s gold %smo"
+            (name (:type c)) (fmt (:amount c))
+            (name (:what c)) (fmt (:price c))
+            (str months))))
+
 (defn- delta-pct [cur old]
   (if (and (pos? old) (not= cur old))
     (format "%+.0f%%" (* 100 (/ (- cur old) old)))
@@ -163,9 +170,7 @@
     (let [pend (:cont-pend s)]
       (doseq [i (range (min 10 (count pend)))]
         (let [c (nth pend i)
-              text (str (name (:type c)) " "
-                        (fmt (:amount c)) " " (name (:what c))
-                        " @ " (fmt (:price c)) "g")]
+              text (fmt-pending c)]
           (draw-label 3 (+ 12 i) text))))
 
     ;; === Controls (row 23-24) ===
