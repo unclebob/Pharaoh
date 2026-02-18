@@ -287,6 +287,60 @@ At game start, faces 0-3 are randomly assigned to the four personality
 roles (Good Guy, Bad Guy, Village Idiot, Banker). The face message dialog
 always uses the assigned face for the delivering neighbor.
 
+### Difficulty Selection Screen
+
+Before gameplay begins, the player sees a full-screen difficulty selection
+screen. This screen replaces the main game grid until a choice is made.
+Background is dark blue (RGB 30, 30, 60). All text is centered horizontally.
+
+```
++----------------------------------------------------------------+
+|  +----------------+                                            |
+|  | [logo.png]     |           PHARAOH                          |
+|  | signature      |        (gold, 48pt)                        |
+|  +----------------+                                            |
+|                                                                |
+|                  Choose your difficulty:                        |
+|                     (white, 22pt)                               |
+|                                                                |
+|          +----------------------------------------------+      |
+|          | [1] Easy  — small pyramid, generous credit   |      |
+|          +----------------------------------------------+      |
+|                                                                |
+|          +----------------------------------------------+      |
+|          | [2] Normal — medium pyramid, standard credit |      |
+|          +----------------------------------------------+      |
+|                                                                |
+|          +----------------------------------------------+      |
+|          | [3] Hard  — massive pyramid, tight credit    |      |
+|          +----------------------------------------------+      |
+|                                                                |
++----------------------------------------------------------------+
+```
+
+**Layout details:**
+
+- Logo image (`resources/images/logo.png`) in the upper left at (20, 20),
+  scaled to 200px wide (maintaining aspect ratio).
+- Title "PHARAOH" centered horizontally at y=150, gold (RGB 255, 215, 0),
+  48pt font.
+- Subtitle "Choose your difficulty:" at y=280, light gray (RGB 220), 22pt.
+- Three buttons centered horizontally, each 500px wide by 50px tall,
+  starting at y=350 with 20px gaps between them.
+- Button background is dark blue-gray (RGB 60, 60, 100) with a light
+  blue-purple stroke (RGB 180, 180, 255) at weight 2, corner radius 8.
+- Button text is white, 18pt, centered within each button.
+
+**Input:**
+
+- Keyboard: `1` or `E`/`e` selects Easy, `2` or `N`/`n` selects Normal,
+  `3` or `H`/`h` selects Hard. `Esc` quits the game.
+- Mouse: clicking within any button rectangle selects that difficulty.
+- Upon selection, `set-difficulty` is applied to the game state and the
+  screen transitions to the main game grid (`:screen :game`).
+
+---
+
 ### Dialog Interaction Model
 
 Both dialog types block all other input while displayed:
@@ -2134,3 +2188,59 @@ so:
   lash them. Lashing boosts short-term output but causes sickness and death,
   creating a death spiral of declining labor, more lashing, and eventual
   revolt.
+
+---
+
+## Appendix B — Known Deviations from Original C Source
+
+The following behaviors exist in the implementation but were not explicitly
+documented in the original spec. They are preserved intentionally as they
+match the original C game logic.
+
+### B.1 Pharaoh as +1 Overseer
+
+The slave-to-overseer ratio is calculated as `slaves / (overseers + 1)`.
+The player character (the Pharaoh) counts as one overseer. This means even
+with zero hired overseers, slaves are not completely unsupervised.
+
+**Source:** `workload.clj:47` — `sl-ov (/ (:slaves state) (+ (:overseers state) 1))`
+
+### B.2 Livestock Aging Penalties
+
+Oxen lose 0.05 health per month and horses lose 0.08 health per month as a
+base aging penalty, independent of feeding and nourishment. This aging only
+applies when the animal population is non-zero (health > 0). Horses age
+faster than oxen, reflecting their shorter working lifespan.
+
+**Source:** `health.clj:24` (oxen 0.05), `health.clj:32` (horses 0.08)
+
+### B.3 Wheat Rot
+
+Stored wheat decays at a rate of 2% per month (`wt-rot-rt = 0.02`), with
+slight random variance (Gaussian around 1.0 with sigma 0.1). The rot is
+deducted **before** feeding and sowing calculations, meaning the player
+must account for storage losses when planning wheat allocation.
+
+**Source:** `state.clj:37` — `:wt-rot-rt 0.02`
+**Source:** `planting.clj:34-35` — `wheat-rot` function
+
+### B.4 Wheat Efficiency Cap
+
+When total wheat demand (feeding + sowing) exceeds available wheat after
+rot, all consumption is proportionally reduced by a wheat efficiency factor
+`wt-eff = wheat-after-rot / total-demand`. This affects feed rates, sowing
+rates, and all downstream calculations uniformly rather than prioritizing
+any single use.
+
+**Source:** `feeding.clj:20-37` — `apply-wheat-shortage` function
+
+### B.5 Interest Rate Display Format
+
+The spec's loan approval messages use `%.2f%%` format (two decimal places
+for interest rate percentage). The implementation matches this format.
+
+### B.6 Workload Event Message Format
+
+The spec's workload event messages use `%s` template substitution for
+man-hours values. The implementation formats the man-hours as `"%.0f
+man-hours"` and substitutes into the template string.

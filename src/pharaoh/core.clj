@@ -7,6 +7,7 @@
             [pharaoh.neighbors :as nb]
             [pharaoh.visits :as vis]
             [pharaoh.speech :as speech]
+            [pharaoh.startup :as su]
             [pharaoh.ui.layout :as lay]
             [pharaoh.ui.screen :as scr]
             [pharaoh.ui.input :as inp])
@@ -36,7 +37,9 @@
         men (nb/set-men rng)]
     (merge
       {:state (merge (st/initial-state) men)
+       :screen :difficulty
        :rng rng
+       :logo (q/load-image "resources/images/logo.png")
        :faces (load-faces)
        :icons (load-icons)}
       (init-timers rng))))
@@ -116,35 +119,79 @@
     (q/text "[press any key]" text-x (+ y h -16))))
 
 (defn- update-app [app]
-  (let [old-msg (get-in app [:state :message])
-        app (vis/check-visits app (System/currentTimeMillis))
-        new-msg (get-in app [:state :message])]
-    (when (and new-msg (not= old-msg new-msg))
-      (speech/speak (:text new-msg) (:face new-msg)))
+  (if (= :game (:screen app))
+    (let [old-msg (get-in app [:state :message])
+          app (vis/check-visits app (System/currentTimeMillis))
+          new-msg (get-in app [:state :message])]
+      (when (and new-msg (not= old-msg new-msg))
+        (speech/speak (:text new-msg) (:face new-msg)))
+      app)
     app))
 
-(defn- draw [{:keys [state faces icons]}]
-  (scr/draw-screen state)
-  (draw-dialog state icons)
-  (when-let [msg (:message state)]
-    (when (map? msg) (draw-face-message msg faces))))
+(def ^:private btn-labels
+  ["[1] Easy  — small pyramid, generous credit"
+   "[2] Normal — medium pyramid, standard credit"
+   "[3] Hard  — massive pyramid, tight credit"])
 
-(defn- key-pressed [{:keys [state rng] :as app} {:keys [raw-key]}]
+(defn- draw-difficulty [logo]
+  (q/background 30 30 60)
+  (let [logo-w (.width logo)
+        logo-h (.height logo)
+        scale (/ 200.0 logo-w)
+        draw-w (int (* logo-w scale))
+        draw-h (int (* logo-h scale))]
+    (q/image logo 20 20 draw-w draw-h))
+  (q/fill 255 215 0)
+  (q/text-size 48)
+  (q/text-align :center :center)
+  (q/text "PHARAOH" (/ lay/win-w 2) 150)
+  (q/fill 220)
+  (q/text-size 22)
+  (q/text "Choose your difficulty:" (/ lay/win-w 2) 280)
+  (doseq [i (range 3)]
+    (let [{:keys [x y w h]} (su/button-rect i)]
+      (q/fill 60 60 100)
+      (q/stroke 180 180 255)
+      (q/stroke-weight 2)
+      (q/rect x y w h 8)
+      (q/stroke-weight 1)
+      (q/fill 255)
+      (q/text-size 18)
+      (q/text-align :center :center)
+      (q/text (nth btn-labels i) (+ x (/ w 2)) (+ y (/ h 2)))))
+  (q/text-align :left :baseline))
+
+(defn- draw [{:keys [screen state faces icons logo]}]
+  (if (= :difficulty screen)
+    (draw-difficulty logo)
+    (do
+      (scr/draw-screen state)
+      (draw-dialog state icons)
+      (when-let [msg (:message state)]
+        (when (map? msg) (draw-face-message msg faces))))))
+
+(defn- key-pressed [{:keys [screen] :as app} {:keys [raw-key]}]
   (set! (.key (quil.applet/current-applet)) (char 0))
-  (assoc app :state (inp/handle-key rng state raw-key)))
-
-(defn- mouse-clicked [{:keys [state rng] :as app} {:keys [x y]}]
-  (let [new-state (inp/handle-mouse state x y)]
-    (cond
-      (:run-clicked new-state)
-      (assoc app :state
-             (sim/do-run rng (dissoc new-state :run-clicked)))
-
-      (:quit-clicked new-state)
+  (if (= :difficulty screen)
+    (if (= (int raw-key) 27)
       (do (q/exit) app)
+      (su/select-difficulty app (su/difficulty-for-key raw-key)))
+    (assoc app :state (inp/handle-key (:rng app) (:state app) raw-key))))
 
-      :else
-      (assoc app :state new-state))))
+(defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
+  (if (= :difficulty screen)
+    (su/select-difficulty app (su/difficulty-for-click x y))
+    (let [new-state (inp/handle-mouse state x y)]
+      (cond
+        (:run-clicked new-state)
+        (assoc app :state
+               (sim/do-run rng (dissoc new-state :run-clicked)))
+
+        (:quit-clicked new-state)
+        (do (q/exit) app)
+
+        :else
+        (assoc app :state new-state)))))
 
 (defn -main [& _args]
   (q/defsketch pharaoh-game

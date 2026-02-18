@@ -49,6 +49,41 @@ Feature: Game Setup
     And saving the game is disabled
 
   # -----------------------------------------------------------
+  # Difficulty Selection Screen
+  # -----------------------------------------------------------
+
+  Scenario: Game starts on difficulty selection screen
+    When the game is initialized
+    Then the screen should be "difficulty"
+
+  Scenario: Selecting Easy from startup screen applies Easy settings
+    Given the game starts on the difficulty screen
+    When the player selects difficulty "Easy" from the startup screen
+    Then the screen should be "game"
+    And the pyramid base should be 115.47 stones
+    And the credit limit should be 5000000 gold
+    And the world growth rate should be 0.15
+
+  Scenario: Selecting Normal from startup screen applies Normal settings
+    Given the game starts on the difficulty screen
+    When the player selects difficulty "Normal" from the startup screen
+    Then the screen should be "game"
+    And the pyramid base should be 346.41 stones
+    And the credit limit should be 500000 gold
+    And the world growth rate should be 0.10
+
+  Scenario: Selecting Hard from startup screen applies Hard settings
+    Given the game starts on the difficulty screen
+    When the player selects difficulty "Hard" from the startup screen
+    Then the screen should be "game"
+    And the pyramid base should be 1154.7 stones
+
+  Scenario: Game transitions to main screen after difficulty selection
+    Given the game starts on the difficulty screen
+    When the player selects difficulty "Normal" from the startup screen
+    Then the screen should be "game"
+
+  # -----------------------------------------------------------
   # Starting Conditions
   # -----------------------------------------------------------
 

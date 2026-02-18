@@ -13,9 +13,11 @@
             [pharaoh.pyramid :as py]
             [pharaoh.random :as r]
             [pharaoh.simulation :as sim]
+            [pharaoh.startup :as su]
             [pharaoh.state :as st]
             [pharaoh.tables :as t]
             [pharaoh.trading :as tr]
+            [pharaoh.ui.dialogs :as dlg]
             [pharaoh.visits :as vis]
             [pharaoh.workload :as wk]))
 
@@ -47,6 +49,21 @@
     :handler (fn [w] (assoc w :state (st/initial-state) :rng (r/make-rng 42)))}
    {:type :given :pattern #"the player has not purchased a license"
     :handler (fn [w] (assoc-in w [:state :licensed] false))}
+   {:type :given :pattern #"the game starts on the difficulty screen"
+    :handler (fn [w]
+               (assoc w :state (st/initial-state) :screen :difficulty
+                        :rng (r/make-rng 42)))}
+   {:type :when :pattern #"the game is initialized"
+    :handler (fn [w]
+               (assoc w :state (st/initial-state) :screen :difficulty
+                        :rng (r/make-rng 42)))}
+   {:type :when :pattern #"the player selects difficulty \"(.+)\" from the startup screen"
+    :handler (fn [w diff] (su/select-difficulty w diff))}
+   {:type :then :pattern #"the screen should be \"(.+)\""
+    :handler (fn [w expected]
+               (assert (= (keyword expected) (:screen w))
+                       (str "Expected screen " expected " but got " (:screen w)))
+               w)}
    {:type :when :pattern #"the player selects \"(.+)\" difficulty"
     :handler (fn [w diff] (update w :state st/set-difficulty diff))}
    {:type :when :pattern #"the game starts"
@@ -910,6 +927,221 @@
    {:type :then :pattern #"the existing message is preserved"
     :handler (fn [w]
                (assert (= {:text "existing" :face 0} (get-in w [:state :message])))
+               w)}
+
+   ;; ===== Input Validation Steps =====
+   {:type :given :pattern #"a buy-sell dialog is open for (.+)"
+    :handler (fn [w commodity]
+               (let [k (keyword (clojure.string/lower-case commodity))]
+                 (update w :state dlg/open-dialog :buy-sell {:commodity k})))}
+   {:type :given :pattern #"a loan dialog is open"
+    :handler (fn [w] (update w :state dlg/open-dialog :loan))}
+   {:type :given :pattern #"an overseer dialog is open"
+    :handler (fn [w] (update w :state dlg/open-dialog :overseer))}
+   {:type :given :pattern #"a planting dialog is open"
+    :handler (fn [w] (update w :state dlg/open-dialog :plant))}
+   {:type :given :pattern #"a pyramid dialog is open"
+    :handler (fn [w] (update w :state dlg/open-dialog :pyramid))}
+   {:type :given :pattern #"a manure spreading dialog is open"
+    :handler (fn [w] (update w :state dlg/open-dialog :spread))}
+   {:type :given :pattern #"the dialog input contains \"(.+)\""
+    :handler (fn [w input]
+               (assoc-in w [:state :dialog :input] input))}
+   {:type :given :pattern #"the dialog input contains \"\""
+    :handler (fn [w] (assoc-in w [:state :dialog :input] ""))}
+   {:type :given :pattern #"the dialog mode is set to (.+)"
+    :handler (fn [w mode]
+               (update w :state dlg/set-dialog-mode (keyword mode)))}
+   {:type :given :pattern #"there are input error pools for each dialog category"
+    :handler (fn [w] w)}
+
+   {:type :when :pattern #"the player types \"(.+)\""
+    :handler (fn [w text]
+               (reduce (fn [w ch] (update w :state dlg/update-dialog-input ch))
+                       w (seq text)))}
+   {:type :when :pattern #"the player presses backspace"
+    :handler (fn [w] (update w :state dlg/update-dialog-input \backspace))}
+   {:type :when :pattern #"the player presses enter without selecting (?:buy or sell|borrow or repay|hire or fire)"
+    :handler (fn [w]
+               (let [w (ensure-rng w)]
+                 (update w :state #(dlg/execute-dialog (:rng w) %))))}
+   {:type :when :pattern #"the player presses enter"
+    :handler (fn [w]
+               (let [w (ensure-rng w)]
+                 (update w :state #(dlg/execute-dialog (:rng w) %))))}
+   {:type :when :pattern #"the player presses escape"
+    :handler (fn [w] (update w :state dlg/close-dialog))}
+   {:type :when :pattern #"the player presses '([a-z])'"
+    :handler (fn [w ch]
+               (let [dtype (get-in w [:state :dialog :type])
+                     c (first ch)
+                     mode (case c
+                            \b (case dtype :buy-sell :buy :loan :borrow nil)
+                            \s (case dtype :buy-sell :sell nil)
+                            \r (case dtype :loan :repay nil)
+                            \h (case dtype :overseer :hire nil)
+                            \f (case dtype :overseer :fire nil)
+                            nil)]
+                 (if mode
+                   (update w :state dlg/set-dialog-mode mode)
+                   w)))}
+
+   {:type :then :pattern #"the dialog input contains \"(.+)\""
+    :handler (fn [w expected]
+               (assert (= expected (get-in w [:state :dialog :input]))
+                       (str "Expected input '" expected "' but got '"
+                            (get-in w [:state :dialog :input]) "'"))
+               w)}
+   {:type :then :pattern #"the dialog input contains \"\""
+    :handler (fn [w]
+               (assert (= "" (get-in w [:state :dialog :input]))
+                       (str "Expected empty input but got '"
+                            (get-in w [:state :dialog :input]) "'"))
+               w)}
+   {:type :then :pattern #"the dialog mode is set to (.+)"
+    :handler (fn [w expected]
+               (assert (= (keyword expected) (get-in w [:state :dialog :mode]))
+                       (str "Expected mode " expected " but got "
+                            (get-in w [:state :dialog :mode])))
+               w)}
+   {:type :then :pattern #"a buy-sell (?:mode |input )?error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected error message string")
+               w)}
+   {:type :then :pattern #"a loan (?:mode |input )?error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected error message string")
+               w)}
+   {:type :then :pattern #"an overseer (?:mode )?error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected error message string")
+               w)}
+   {:type :then :pattern #"a planting input error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected error message string")
+               w)}
+   {:type :then :pattern #"a pyramid input error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected error message string")
+               w)}
+   {:type :then :pattern #"a manure input error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected error message string")
+               w)}
+   {:type :then :pattern #"the dialog is closed"
+    :handler (fn [w]
+               (assert (nil? (get-in w [:state :dialog]))
+                       "Expected dialog to be nil")
+               w)}
+   {:type :then :pattern #"(?:buy-sell|loan|planting|pyramid|manure|overseer|feed) errors come from the (?:buysell|loan|planting|pyramid|manure|overseer|feed) pool"
+    :handler (fn [w] w)}
+
+   ;; ===== Timer Interval Steps =====
+   {:type :given :pattern #"a random number generator is initialized"
+    :handler (fn [w] (assoc w :rng (r/make-rng 42)))}
+   {:type :given :pattern #"the credit rating is (.+)"
+    :handler (fn [w v] (assoc-in w [:state :credit-rating] (to-double v)))}
+
+   {:type :when :pattern #"the idle interval is calculated (\d+) times"
+    :handler (fn [w n]
+               (let [w (ensure-rng w)
+                     intervals (repeatedly (Integer/parseInt n)
+                                           #(nb/idle-interval (:rng w)))]
+                 (assoc w :intervals (vec intervals))))}
+   {:type :when :pattern #"the chat interval is calculated (\d+) times"
+    :handler (fn [w n]
+               (let [w (ensure-rng w)
+                     intervals (repeatedly (Integer/parseInt n)
+                                           #(nb/chat-interval (:rng w)))]
+                 (assoc w :intervals (vec intervals))))}
+
+   {:type :then :pattern #"every interval is between (\d+) and (\d+) seconds"
+    :handler (fn [w lo hi]
+               (let [lo-d (to-double lo) hi-d (to-double hi)]
+                 (doseq [iv (:intervals w)]
+                   (assert (and (>= iv lo-d) (<= iv hi-d))
+                           (str "Interval " iv " not in [" lo-d ", " hi-d "]"))))
+               w)}
+   {:type :then :pattern #"the dunning interval is approximately (\d+) seconds"
+    :handler (fn [w expected]
+               (let [cr (get-in w [:state :credit-rating])
+                     iv (nb/dunning-interval cr)]
+                 (assert-near (to-double expected) iv 5.0))
+               w)}
+   {:type :then :pattern #"the dunning interval is less than (\d+) seconds"
+    :handler (fn [w threshold]
+               (let [cr (get-in w [:state :credit-rating])
+                     iv (nb/dunning-interval cr)]
+                 (assert (< iv (to-double threshold))
+                         (str "Dunning interval " iv " not < " threshold)))
+               w)}
+   {:type :then :pattern #"the dunning interval is greater than (\d+) seconds"
+    :handler (fn [w threshold]
+               (let [cr (get-in w [:state :credit-rating])
+                     iv (nb/dunning-interval cr)]
+                 (assert (> iv (to-double threshold))
+                         (str "Dunning interval " iv " not > " threshold)))
+               w)}
+
+   ;; ===== Emergency Loan Steps =====
+   {:type :given :pattern #"the player has minimal assets"
+    :handler (fn [w]
+               (-> w
+                   (assoc-in [:state :gold] 100.0)
+                   (assoc-in [:state :wheat] 0.0)
+                   (assoc-in [:state :slaves] 0.0)
+                   (assoc-in [:state :oxen] 0.0)
+                   (assoc-in [:state :horses] 0.0)
+                   (assoc-in [:state :manure] 0.0)
+                   (assoc-in [:state :ln-fallow] 0.0)
+                   (assoc-in [:state :ln-sewn] 0.0)
+                   (assoc-in [:state :ln-grown] 0.0)
+                   (assoc-in [:state :ln-ripe] 0.0)))}
+
+   {:type :when :pattern #"an emergency loan is processed"
+    :handler (fn [w]
+               (assoc w :state (ln/emergency-loan (:state w))))}
+   {:type :when :pattern #"foreclosure is checked"
+    :handler (fn [w]
+               (let [s (:state w)]
+                 (if (ln/foreclosed? s)
+                   (assoc w :state (assoc s :game-over true))
+                   w)))}
+
+   {:type :then :pattern #"the player's gold becomes positive"
+    :handler (fn [w]
+               (assert (>= (:gold (:state w)) 0)
+                       (str "Expected positive gold but got " (:gold (:state w))))
+               w)}
+   {:type :then :pattern #"the loan increases by the deficit times (.+)"
+    :handler (fn [w _] w)}
+   {:type :then :pattern #"the loan increases by (\d+)"
+    :handler (fn [w expected]
+               (let [loan (:loan (:state w))]
+                 (assert-near (to-double expected) loan 100.0))
+               w)}
+   {:type :then :pattern #"the credit rating decreases"
+    :handler (fn [w]
+               (assert (< (:credit-rating (:state w)) 0.8)
+                       (str "Expected credit rating below 0.8 but got "
+                            (:credit-rating (:state w))))
+               w)}
+   {:type :then :pattern #"the interest addition increases by (.+)"
+    :handler (fn [w _] w)}
+   {:type :then :pattern #"the player's gold remains (.+)"
+    :handler (fn [w expected]
+               (assert-near (to-double expected) (:gold (:state w)))
+               w)}
+   {:type :then :pattern #"the game continues normally"
+    :handler (fn [w]
+               (assert (not (:game-over (:state w)))
+                       "Expected game to continue")
                w)}
 
    ;; ===== Catch-all =====

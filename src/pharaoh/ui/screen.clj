@@ -15,20 +15,21 @@
     (format "%+.0f%%" (* 100 (/ (- cur old) old)))
     ""))
 
-(defn- draw-section-frame [col row cols rows title]
-  (let [{:keys [x y w h]} (lay/cell-rect-span col row cols rows)]
-    (q/stroke 160)
-    (q/stroke-weight 1)
-    (q/no-fill)
-    (q/rect x y w h)
-    ;; Gray lines between rows (skip title row)
-    (q/stroke 210)
-    (doseq [r (range 1 rows)]
-      (let [ly (+ y (* r lay/cell-h))]
-        (q/line x ly (+ x w) ly)))
-    (q/fill 60)
-    (q/text-size lay/title-size)
-    (q/text title (+ x 4) (+ y lay/title-size 2))))
+(defn- draw-section-frame
+  ([col row cols rows title] (draw-section-frame col row cols rows title rows))
+  ([col row cols rows title line-rows]
+   (let [{:keys [x y w h]} (lay/cell-rect-span col row cols rows)]
+     (q/stroke 160)
+     (q/stroke-weight 1)
+     (q/no-fill)
+     (q/rect x y w h)
+     (q/stroke 210)
+     (doseq [r (range 1 line-rows)]
+       (let [ly (+ y (* r lay/cell-h))]
+         (q/line x ly (+ x w) ly)))
+     (q/fill 60)
+     (q/text-size lay/title-size)
+     (q/text title (+ x 4) (+ y lay/title-size 2)))))
 
 (defn- draw-label [col row label]
   (let [{:keys [x y]} (lay/cell-rect col row)]
@@ -69,8 +70,9 @@
     (let [title (case section
                   :spread-plant "Spread & Plant"
                   :feed-rates "Feed Rates"
-                  (clojure.string/capitalize (name section)))]
-      (draw-section-frame c r w h title)))
+                  (clojure.string/capitalize (name section)))
+          line-rows (if (= section :pyramid) 4 h)]
+      (draw-section-frame c r w h title line-rows)))
 
   (let [s state]
     ;; === Commodities (cols 0-3, rows 1-6) ===
