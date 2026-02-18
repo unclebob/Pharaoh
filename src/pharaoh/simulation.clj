@@ -185,8 +185,13 @@
 (defn do-run [rng state]
   (let [state (record-old state)
         event? (< (r/uniform rng 0.0 8.0) 1.0)
-        state (if event?
-                (let [{:keys [type state]} (ev/random-event rng state)]
-                  (assoc state :last-event type))
-                state)]
-    (run-month rng state)))
+        [state etype] (if event?
+                        (let [{:keys [type state]} (ev/random-event rng state)]
+                          [(assoc state :last-event type) type])
+                        [state nil])
+        state (run-month rng state)]
+    (if etype
+      (let [msg (ev/event-message rng etype nil)
+            face (long (r/uniform rng 0 4))]
+        (assoc state :message {:text (or msg "Something happened...") :face face}))
+      state)))

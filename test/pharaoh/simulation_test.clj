@@ -1,6 +1,7 @@
 (ns pharaoh.simulation-test
   (:require [clojure.test :refer :all]
             [pharaoh.simulation :as sim]
+            [pharaoh.events :as ev]
             [pharaoh.random :as r]
             [pharaoh.state :as st]
             [pharaoh.contracts :as ct]))
@@ -137,3 +138,27 @@
           (is (>= (:slaves result) 0))
           (is (>= (:gold result) Double/NEGATIVE_INFINITY))
           (recur result (inc n)))))))
+
+;; seed 4171: first uniform(0,8) < 1.0 → event fires
+;; seed 42: first uniform(0,8) >= 1.0 → no event
+
+(deftest do-run-sets-event-message
+  (let [state (game-state)
+        result (sim/do-run (r/make-rng 4171) state)]
+    (is (map? (:message result)))
+    (is (string? (:text (:message result))))
+    (is (integer? (:face (:message result))))
+    (is (<= 0 (:face (:message result)) 3))))
+
+(deftest do-run-no-message-without-event
+  (let [state (game-state)
+        result (sim/do-run (r/make-rng 42) state)]
+    (is (nil? (:message result)))))
+
+(deftest event-message-structure
+  (let [state (game-state)
+        result (sim/do-run (r/make-rng 4171) state)
+        msg (:message result)]
+    (is (contains? msg :text))
+    (is (contains? msg :face))
+    (is (not (clojure.string/blank? (:text msg))))))

@@ -291,6 +291,17 @@ At game start, faces 0-3 are randomly assigned to the four personality
 roles (Good Guy, Bad Guy, Village Idiot, Banker). The face message dialog
 always uses the assigned face for the delivering neighbor.
 
+### Event Message Dialog
+
+When a random event occurs during a month, the event narration is displayed
+as a face message dialog after the month simulation completes. A random
+neighbor portrait (face 0-3) delivers the news. The player must press any
+key to dismiss the event message before continuing.
+
+Events that trigger popups: Locusts, Plagues, Acts of God, Acts of Mobs,
+War, Revolt, Workload, Health Events, Labor Event, Wheat Event, Gold Event,
+Economy Event. Each has a pool of narration templates (see Messages section).
+
 ### Contracts Dialog
 
 The contracts dialog appears as a rounded-corner rectangle spanning grid cells

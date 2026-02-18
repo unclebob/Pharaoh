@@ -256,3 +256,15 @@ Feature: Random Events
     When a workload event occurs
     Then a random workload-event message is displayed from the pool
     # Pool contains ~10 variants describing absurd reasons for extra labor
+
+  # -----------------------------------------------------------
+  # Event Popup Display
+  # -----------------------------------------------------------
+
+  Scenario: Event triggers a face-message popup after the month
+    Given the game is running
+    And the player has slaves, oxen, and horses
+    When a random event occurs during the month simulation
+    Then a face message dialog appears with event narration text
+    And the message has a neighbor face portrait
+    And pressing any key dismisses the dialog

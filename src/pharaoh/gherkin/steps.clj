@@ -1287,6 +1287,34 @@
                        "Expected contract rejection error")
                w)}
 
+   ;; ===== Event Popup Steps =====
+   {:type :when :pattern #"a random event occurs during the month simulation"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     rng (:rng w)
+                     {:keys [type state]} (ev/random-event rng (:state w))
+                     state (assoc state :last-event type)
+                     state (sim/run-month rng state)
+                     msg (ev/event-message rng type nil)
+                     face (long (r/uniform rng 0 4))]
+                 (assoc w :state
+                        (assoc state :message
+                               {:text (or msg "Something happened...") :face face}))))}
+
+   {:type :then :pattern #"a face message dialog appears with event narration text"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (string? (:text m)) "Expected text string"))
+               w)}
+
+   {:type :then :pattern #"the message has a neighbor face portrait"
+    :handler (fn [w]
+               (let [face (:face (get-in w [:state :message]))]
+                 (assert (and (>= face 0) (<= face 3))
+                         (str "Expected face 0-3, got " face)))
+               w)}
+
    ;; ===== Catch-all =====
    {:type :any :pattern #".*"
     :handler (fn [w & _] w)}])
