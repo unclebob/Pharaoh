@@ -96,3 +96,11 @@
           debt-asset (if (pos? nw) (/ (:loan state) nw) 100.0)
           limit (t/interpolate (:credit-rating state) t/debt-support)]
       (> debt-asset limit))))
+
+(defn debt-warning? [state]
+  (if (<= (:loan state) 0)
+    false
+    (let [nw (ec/net-worth state)
+          debt-asset (if (pos? nw) (/ (:loan state) nw) 100.0)
+          limit (t/interpolate (:credit-rating state) t/debt-support)]
+      (> debt-asset (* limit 0.8)))))

@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [pharaoh.simulation :as sim]
             [pharaoh.events :as ev]
+            [pharaoh.messages :as msg]
             [pharaoh.random :as r]
             [pharaoh.state :as st]
             [pharaoh.contracts :as ct]))
@@ -162,3 +163,22 @@
     (is (contains? msg :text))
     (is (contains? msg :face))
     (is (not (clojure.string/blank? (:text msg))))))
+
+(deftest debt-warning-sets-banker-message
+  (let [rng (r/make-rng 42)
+        state (assoc (game-state)
+                :loan 2800000.0 :credit-rating 0.8
+                :gold 2000000.0)
+        result (sim/run-month rng state)]
+    (is (not (:game-over result)) "Should not trigger foreclosure")
+    (is (map? (:message result)))
+    (is (string? (:text (:message result))))
+    (is (some #{(:text (:message result))} msg/foreclosure-warning-messages))
+    (is (= (:banker state) (:face (:message result))))))
+
+(deftest no-debt-warning-when-healthy
+  (let [rng (r/make-rng 42)
+        state (assoc (game-state)
+                :loan 1000.0 :credit-rating 0.8)
+        result (sim/run-month rng state)]
+    (is (nil? (:message result)))))

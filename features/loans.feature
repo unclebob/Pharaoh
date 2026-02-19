@@ -239,3 +239,14 @@ Feature: Loans
     Given the player has no outstanding loan
     When foreclosure is checked
     Then the game continues normally
+
+  # -----------------------------------------------------------
+  # Debt Warning (80% of foreclosure limit)
+  # -----------------------------------------------------------
+
+  Scenario: Debt warning when ratio exceeds 80% of foreclosure limit
+    Given the game is running
+    And the player has a high debt-to-asset ratio near the foreclosure limit
+    When a month is simulated
+    Then a face message dialog appears with a foreclosure warning
+    And the message has the banker face portrait

@@ -125,3 +125,21 @@
                 :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
                          :horses 500.0 :oxen 300.0 :land 5000.0})]
     (is (false? (ln/foreclosed? state)))))
+
+(deftest debt-warning-true-above-80-pct
+  (let [state (assoc (st/initial-state)
+                :loan 400000.0 :credit-rating 0.1
+                :gold 1000.0 :slaves 1.0 :oxen 0.0 :horses 0.0
+                :ln-fallow 1.0 :wheat 0.0 :manure 0.0
+                :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                         :horses 500.0 :oxen 300.0 :land 5000.0})]
+    (is (true? (ln/debt-warning? state)))))
+
+(deftest debt-warning-false-below-80-pct
+  (let [state (assoc (st/initial-state)
+                :loan 1000.0 :credit-rating 0.8
+                :gold 100000.0 :slaves 100.0 :oxen 50.0
+                :ln-fallow 100.0
+                :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                         :horses 500.0 :oxen 300.0 :land 5000.0})]
+    (is (false? (ln/debt-warning? state)))))

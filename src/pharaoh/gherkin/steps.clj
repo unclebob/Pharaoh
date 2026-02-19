@@ -6,6 +6,7 @@
             [pharaoh.feeding :as fd]
             [pharaoh.health :as hl]
             [pharaoh.loans :as ln]
+            [pharaoh.messages :as msg]
             [pharaoh.neighbors :as nb]
             [pharaoh.overseers :as ov]
             [pharaoh.persistence :as ps]
@@ -1285,6 +1286,31 @@
                (assert (or (:contract-rejected w)
                            (string? (:message (:state w))))
                        "Expected contract rejection error")
+               w)}
+
+   ;; ===== Debt Warning Steps =====
+   {:type :given :pattern #"the player has a high debt-to-asset ratio near the foreclosure limit"
+    :handler (fn [w]
+               (-> w
+                   (assoc-in [:state :loan] 2050000.0)
+                   (assoc-in [:state :credit-rating] 0.8)
+                   (assoc-in [:state :gold] 2000000.0)))}
+
+   {:type :then :pattern #"a face message dialog appears with a foreclosure warning"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (string? (:text m)) "Expected text string")
+                 (assert (some #{(:text m)} msg/foreclosure-warning-messages)
+                         (str "Expected foreclosure warning message, got: " (:text m))))
+               w)}
+
+   {:type :then :pattern #"the message has the banker face portrait"
+    :handler (fn [w]
+               (let [face (:face (get-in w [:state :message]))]
+                 (assert (= (:banker (:state w)) face)
+                         (str "Expected banker face " (:banker (:state w))
+                              " but got " face)))
                w)}
 
    ;; ===== Event Popup Steps =====

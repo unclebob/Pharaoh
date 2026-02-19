@@ -5,6 +5,7 @@
             [pharaoh.feeding :as fd]
             [pharaoh.health :as hl]
             [pharaoh.loans :as ln]
+            [pharaoh.messages :as msg]
             [pharaoh.overseers :as ov]
             [pharaoh.planting :as pl]
             [pharaoh.pyramid :as py]
@@ -143,6 +144,13 @@
     (assoc state :game-over true)
     state))
 
+(defn- check-debt-warning [state rng]
+  (if (and (not (:game-over state)) (ln/debt-warning? state))
+    (assoc state :message
+           {:text (msg/pick rng msg/foreclosure-warning-messages)
+            :face (:banker state)})
+    state))
+
 (defn- check-win [state]
   (if (py/won? (:py-base state) (:py-height state))
     (assoc state :game-won true)
@@ -179,6 +187,7 @@
       check-emergency-loan
       update-net-worth
       check-foreclosure
+      (check-debt-warning rng)
       check-win
       (assoc :wk-addition 0.0)))
 
