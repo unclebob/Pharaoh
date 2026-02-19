@@ -1397,6 +1397,15 @@
                               " but got " face)))
                w)}
 
+   ;; ===== Foreclosure Dismiss =====
+   {:type :then :pattern #"dismissing the message quits the game"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (inp/handle-key (:rng w) (:state w) \space)]
+                 (assert (:quit-clicked s)
+                         "Expected :quit-clicked after dismissing foreclosure message")
+                 (assoc w :state s)))}
+
    ;; ===== Event Popup Steps =====
    {:type :when :pattern #"a random event occurs during the month simulation"
     :handler (fn [w]

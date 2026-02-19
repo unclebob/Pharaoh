@@ -5,7 +5,8 @@
             [pharaoh.messages :as msg]
             [pharaoh.random :as r]
             [pharaoh.state :as st]
-            [pharaoh.contracts :as ct]))
+            [pharaoh.contracts :as ct]
+            [pharaoh.ui.input :as inp]))
 
 (defn game-state []
   (let [rng (r/make-rng 1)]
@@ -212,4 +213,13 @@
         state (assoc (game-state)
                 :loan 1000.0 :credit-rating 0.8)
         result (sim/run-month rng state)]
+    (is (nil? (:message result)))))
+
+(deftest foreclosure-dismiss-sets-quit-clicked
+  (let [rng (r/make-rng 42)
+        state (assoc (game-state)
+                :game-over true
+                :message {:text "The bank forecloses!" :face 0})
+        result (inp/handle-key rng state \space)]
+    (is (true? (:quit-clicked result)))
     (is (nil? (:message result)))))

@@ -244,7 +244,10 @@
     (if (= (int raw-key) 27)
       (do (q/exit) app)
       (su/select-difficulty app (su/difficulty-for-key raw-key)))
-    (assoc app :state (inp/handle-key (:rng app) (:state app) raw-key key))))
+    (let [new-state (inp/handle-key (:rng app) (:state app) raw-key key)]
+      (if (:quit-clicked new-state)
+        (do (q/exit) app)
+        (assoc app :state new-state)))))
 
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
   (if (= :difficulty screen)

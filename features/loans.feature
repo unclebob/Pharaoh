@@ -230,6 +230,7 @@ Feature: Loans
     And a face message dialog appears with a foreclosure message
     And the message has the banker face portrait
     And the game ends
+    And dismissing the message quits the game
 
   Scenario: No foreclosure when debt-to-asset ratio is safe
     Given the player has a loan of 1000
