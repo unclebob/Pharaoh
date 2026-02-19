@@ -22,7 +22,7 @@
   (let [state (assoc (st/initial-state)
                 :credit-limit 100000.0 :loan 80000.0 :gold 5000.0)
         result (ln/borrow state 30000.0)]
-    (is (:needs-credit-check result))))
+    (is (= "Exceeds credit limit" (:error result)))))
 
 (deftest credit-check-recalculates-limit
   (let [rng (r/make-rng 42)

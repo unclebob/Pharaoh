@@ -252,7 +252,7 @@ Feature: Contracts
     Given the contracts dialog is in confirming mode
     When the player presses 'y'
     Then the offer moves to pending contracts
-    And the dialog returns to browsing mode
+    And the dialog is dismissed
 
   Scenario: Rejecting an offer returns to browsing
     Given the contracts dialog is in confirming mode

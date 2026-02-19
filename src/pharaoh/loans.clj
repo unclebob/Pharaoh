@@ -18,7 +18,7 @@
 
 (defn borrow [state amt]
   (if (> (+ (:loan state) amt) (:credit-limit state))
-    {:needs-credit-check true :amount amt :state state}
+    {:error "Exceeds credit limit"}
     (let [new-loan (+ (:loan state) amt)
           headroom (/ (- (:credit-limit state) new-loan)
                       (:credit-limit state))

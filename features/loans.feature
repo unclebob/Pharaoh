@@ -18,13 +18,11 @@ Feature: Loans
     Then the loan balance should be 50000
     And the player's gold should increase by 50000
 
-  Scenario: Borrow exceeding credit limit triggers credit check
+  Scenario: Borrow exceeding credit limit is refused
     Given the credit limit is 100000
     And the current loan is 80000
     When the player tries to borrow 30000 gold
-    Then a credit check fee is offered
-    # Fee is approximately 5% of the total debt, with slight random variance
-    And the player must accept or decline the fee
+    Then the borrow is refused with "Exceeds credit limit"
 
   Scenario: Credit check recalculates limit based on real net worth
     Given the player accepts the credit check fee

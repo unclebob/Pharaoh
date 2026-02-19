@@ -455,7 +455,7 @@
         rng (r/make-rng 42)
         result (inp/handle-key rng state \y)]
     (is (= 1 (count (:cont-pend result))))
-    (is (= :browsing (get-in result [:dialog :mode])))))
+    (is (nil? (:dialog result)))))
 
 (deftest n-in-confirming-mode-rejects
   (let [state (-> (st/initial-state)
@@ -552,6 +552,92 @@
     ;; Dismissing msg1 should pop msg2 to :message
     (is (= msg2 (:message result)))
     (is (empty? (:contract-msgs result)))))
+
+;; ---- handle-mouse-move (hover changes selection) ----
+
+(deftest mouse-move-over-row-sets-selected
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog))
+        mx (dialog-center-x)
+        my (offer-row-y 2)
+        result (inp/handle-mouse-move state mx my)]
+    (is (= 2 (get-in result [:dialog :selected])))))
+
+(deftest mouse-move-outside-offer-area-keeps-selected
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog)
+                  (assoc-in [:dialog :selected] 3))
+        mx (dialog-center-x)
+        my (+ (offer-row-y 4) 200)
+        result (inp/handle-mouse-move state mx my)]
+    (is (= 3 (get-in result [:dialog :selected])))))
+
+(deftest mouse-move-no-dialog-returns-state-unchanged
+  (let [state (st/initial-state)
+        result (inp/handle-mouse-move state 100 100)]
+    (is (= state result))))
+
+;; ---- confirm dialog button clicks ----
+
+(defn- confirm-button-y
+  "Compute pixel y for the center of the confirm buttons."
+  []
+  (let [{:keys [y h]} (lay/cell-rect-span 2 5 7 14)
+        btn-y (+ y h -20 (- lay/title-size) -8)]
+    (+ btn-y (/ lay/title-size 2))))
+
+(defn- accept-button-x
+  "Compute pixel x for the center of the Accept button."
+  []
+  (let [{:keys [x]} (lay/cell-rect-span 2 5 7 14)]
+    (+ x 8 50)))
+
+(defn- reject-button-x
+  "Compute pixel x for the center of the Reject button."
+  []
+  (let [{:keys [x]} (lay/cell-rect-span 2 5 7 14)]
+    (+ x 120 50)))
+
+(defn- cancel-button-x
+  "Compute pixel x for the center of the Cancel button."
+  []
+  (let [{:keys [x]} (lay/cell-rect-span 2 5 7 14)]
+    (+ x 232 50)))
+
+(defn- confirming-state []
+  (-> (st/initial-state)
+      (assoc :cont-offers test-offers
+             :players [{:name "Test"}]
+             :cont-pend [])
+      (dlg/open-contracts-dialog)
+      (dlg/confirm-selected)))
+
+(deftest click-accept-button-accepts-contract
+  (let [state (confirming-state)
+        result (inp/handle-mouse state (accept-button-x) (confirm-button-y))]
+    (is (= 1 (count (:cont-pend result))))
+    (is (nil? (:dialog result)))))
+
+(deftest click-reject-button-rejects-contract
+  (let [state (confirming-state)
+        result (inp/handle-mouse state (reject-button-x) (confirm-button-y))]
+    (is (= :browsing (get-in result [:dialog :mode])))
+    (is (empty? (:cont-pend result)))))
+
+(deftest click-cancel-button-closes-dialog
+  (let [state (confirming-state)
+        result (inp/handle-mouse state (cancel-button-x) (confirm-button-y))]
+    (is (nil? (:dialog result)))))
+
+(deftest click-outside-confirm-buttons-stays-confirming
+  (let [state (confirming-state)
+        ;; Click well to the right of all buttons
+        mx (+ (cancel-button-x) 300)
+        my (confirm-button-y)
+        result (inp/handle-mouse state mx my)]
+    (is (= :confirming (get-in result [:dialog :mode])))))
 
 (deftest dismiss-message-no-queue
   (let [rng (r/make-rng 42)

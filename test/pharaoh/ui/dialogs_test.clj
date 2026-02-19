@@ -427,7 +427,7 @@
                   (dlg/open-contracts-dialog))
         result (dlg/accept-selected state)]
     (is (= 1 (count (:cont-pend result))))
-    (is (= :browsing (get-in result [:dialog :mode])))))
+    (is (nil? (:dialog result)))))
 
 (deftest contracts-dialog-accept-deactivates-offer
   (let [offers (vec (repeat 3 {:type :buy :who 0 :what :wheat
@@ -439,8 +439,8 @@
                          :cont-pend [])
                   (dlg/open-contracts-dialog))
         result (dlg/accept-selected state)]
-    ;; active-offers should be refreshed with one fewer
-    (is (= 2 (count (get-in result [:dialog :active-offers]))))))
+    ;; dialog should be closed after accept
+    (is (nil? (:dialog result)))))
 
 (deftest contracts-dialog-reject-returns-to-browsing
   (let [offers (vec (repeat 5 {:type :buy :who 0 :what :wheat

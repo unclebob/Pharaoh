@@ -105,6 +105,24 @@
 (defn- commodity-for-row [row]
   (case row 1 :wheat 2 :manure 3 :slaves 4 :horses 5 :oxen 6 :land nil))
 
+(defn- confirm-button-bounds []
+  (let [{:keys [x y w h]} (lay/cell-rect-span 2 5 7 14)
+        btn-y (+ y h -20 (- lay/title-size) -8)]
+    {:accept {:x (+ x 8) :y btn-y :w 100 :h lay/title-size}
+     :reject {:x (+ x 120) :y btn-y :w 100 :h lay/title-size}
+     :cancel {:x (+ x 232) :y btn-y :w 100 :h lay/title-size}}))
+
+(defn- in-rect? [mx my {:keys [x y w h]}]
+  (and (<= x mx (+ x w)) (<= y my (+ y h))))
+
+(defn- handle-confirm-click [state mx my]
+  (let [{:keys [accept reject cancel]} (confirm-button-bounds)]
+    (cond
+      (in-rect? mx my accept) (dlg/accept-selected state)
+      (in-rect? mx my reject) (dlg/reject-selected state)
+      (in-rect? mx my cancel) (dlg/close-dialog state)
+      :else state)))
+
 (defn- handle-contract-click [state my]
   (let [{:keys [y]} (lay/cell-rect-span 2 5 7 14)
         y0 (+ y (* lay/title-size 2) lay/small-size 8)
@@ -118,10 +136,31 @@
         (assoc-in state [:dialog :selected] idx))
       state)))
 
+(defn- hover-row-index [my]
+  (let [{:keys [y]} (lay/cell-rect-span 2 5 7 14)
+        y0 (+ y (* lay/title-size 2) lay/small-size 8)
+        row-h (+ lay/label-size 4)
+        idx (int (/ (- my y0) row-h))]
+    idx))
+
+(defn handle-mouse-move [state _mx my]
+  (if (and (= :contracts (get-in state [:dialog :type]))
+           (= :browsing (get-in state [:dialog :mode])))
+    (let [idx (hover-row-index my)
+          n (count (get-in state [:dialog :active-offers]))]
+      (if (and (>= idx 0) (< idx n))
+        (assoc-in state [:dialog :selected] idx)
+        state))
+    state))
+
 (defn handle-mouse [state mx my]
   (let [col (int (/ (- mx lay/pad) lay/cell-w))
         row (int (/ (- my lay/pad) lay/cell-h))]
     (cond
+      (and (= :contracts (get-in state [:dialog :type]))
+           (= :confirming (get-in state [:dialog :mode])))
+      (handle-confirm-click state mx my)
+
       (and (= :contracts (get-in state [:dialog :type]))
            (= :browsing (get-in state [:dialog :mode])))
       (handle-contract-click state my)

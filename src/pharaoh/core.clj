@@ -139,9 +139,27 @@
     (q/text-size lay/value-size)
     (q/text-leading (* lay/value-size 1.3))
     (q/text text (+ x 8) (+ y (* lay/title-size 3)) (- w 16) (- h 60))
-    (q/fill 100)
-    (q/text-size lay/small-size)
-    (q/text "y=accept  n=reject  Esc=back" (+ x 8) (+ y h -20))))
+    (let [btn-y (+ y h -20 (- lay/title-size) -8)
+          btn-h lay/title-size]
+      (q/text-size lay/label-size)
+      ;; Accept button — green tint
+      (q/fill 180 230 180)
+      (q/stroke 80 160 80)
+      (q/rect (+ x 8) btn-y 100 btn-h 3)
+      (q/fill 0) (q/no-stroke)
+      (q/text "Accept (y)" (+ x 14) (+ btn-y lay/label-size -2))
+      ;; Reject button — red tint
+      (q/fill 230 180 180)
+      (q/stroke 160 80 80)
+      (q/rect (+ x 120) btn-y 100 btn-h 3)
+      (q/fill 0) (q/no-stroke)
+      (q/text "Reject (n)" (+ x 126) (+ btn-y lay/label-size -2))
+      ;; Cancel button — gray tint
+      (q/fill 220 220 220)
+      (q/stroke 140 140 140)
+      (q/rect (+ x 232) btn-y 100 btn-h 3)
+      (q/fill 0) (q/no-stroke)
+      (q/text "Cancel (Esc)" (+ x 236) (+ btn-y lay/label-size -2)))))
 
 (defn- draw-contracts-dialog [state]
   (when-let [d (:dialog state)]
@@ -228,6 +246,10 @@
       (q/text (nth btn-labels i) (+ x (/ w 2)) (+ y (/ h 2)))))
   (q/text-align :left :baseline))
 
+(defn- show-face-message? [state]
+  (and (map? (:message state))
+       (not= :contracts (get-in state [:dialog :type]))))
+
 (defn- draw [{:keys [screen state faces icons logo]}]
   (if (= :difficulty screen)
     (draw-difficulty logo)
@@ -235,8 +257,8 @@
       (scr/draw-screen state)
       (draw-dialog state icons)
       (draw-contracts-dialog state)
-      (when-let [msg (:message state)]
-        (when (map? msg) (draw-face-message msg faces))))))
+      (when (show-face-message? state)
+        (draw-face-message (:message state) faces)))))
 
 (defn- quit! []
   (q/exit)
@@ -252,6 +274,11 @@
       (if (:quit-clicked new-state)
         (do (quit!) app)
         (assoc app :state new-state)))))
+
+(defn- mouse-moved [{:keys [screen state] :as app} {:keys [x y]}]
+  (if (= :difficulty screen)
+    app
+    (assoc app :state (inp/handle-mouse-move state x y))))
 
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
   (if (= :difficulty screen)
@@ -277,4 +304,6 @@
     :draw draw
     :key-pressed key-pressed
     :mouse-pressed mouse-clicked
+    :mouse-moved mouse-moved
+    :on-close (fn [_] (System/exit 0))
     :middleware [m/fun-mode]))

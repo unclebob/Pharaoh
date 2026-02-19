@@ -204,14 +204,14 @@
    {:type :when :pattern #"the player borrows (.+) gold"
     :handler (fn [w amt]
                (let [result (ln/borrow (:state w) (to-double amt))]
-                 (if (:needs-credit-check result)
-                   (assoc w :needs-credit-check true)
+                 (if (:error result)
+                   (assoc w :error (:error result))
                    (assoc w :state result))))}
    {:type :when :pattern #"the player tries to borrow (.+) gold"
     :handler (fn [w amt]
                (let [result (ln/borrow (:state w) (to-double amt))]
-                 (if (:needs-credit-check result)
-                   (assoc w :needs-credit-check true)
+                 (if (:error result)
+                   (assoc w :error (:error result))
                    (assoc w :state result))))}
    {:type :when :pattern #"the player repays the full (.+)"
     :handler (fn [w amt]
@@ -231,9 +231,10 @@
                w)}
    {:type :then :pattern #"the player's gold should (?:increase|decrease) by (.+)"
     :handler (fn [w _] w)}
-   {:type :then :pattern #"a credit check fee is offered"
-    :handler (fn [w]
-               (assert (:needs-credit-check w) "Expected credit check needed")
+   {:type :then :pattern #"the borrow is refused with \"(.+)\""
+    :handler (fn [w msg]
+               (assert (= msg (:error w))
+                       (str "Expected error '" msg "', got '" (:error w) "'"))
                w)}
    {:type :then :pattern #"the credit rating improves by (.+)"
     :handler (fn [w _] w)}
@@ -1369,8 +1370,8 @@
                        (str "Expected browsing mode, got " (get-in w [:state :dialog :mode])))
                w)}
 
-   {:type :then :pattern #"the contracts dialog closes"
-    :handler (fn [w]
+   {:type :then :pattern #"the (contracts )?dialog (closes|is dismissed)"
+    :handler (fn [w & _]
                (assert (nil? (get-in w [:state :dialog]))
                        "Expected dialog to be nil")
                w)}

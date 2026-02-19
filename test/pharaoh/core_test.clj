@@ -1,6 +1,8 @@
 (ns pharaoh.core-test
   (:require [clojure.test :refer :all]
-            [pharaoh.core]))
+            [pharaoh.core]
+            [pharaoh.state :as st]
+            [pharaoh.ui.dialogs :as dlg]))
 
 ;; Access private functions via var references
 (def fmt-offer #'pharaoh.core/fmt-offer)
@@ -51,3 +53,29 @@
         players [{:name "Only One"}]]
     (is (= "Will you sell 25 horses to ? for 500 gold in 18 months?"
            (fmt-confirm offer players)))))
+
+;; ---- show-face-message? ----
+
+(def show-face-message? #'pharaoh.core/show-face-message?)
+
+(deftest face-message-shown-when-no-dialog
+  (let [state (assoc (st/initial-state) :message {:text "Hi" :face 0})]
+    (is (true? (show-face-message? state)))))
+
+(deftest face-message-hidden-when-contracts-dialog-open
+  (let [offers [{:type :buy :who 0 :what :wheat :amount 100.0
+                 :price 1000.0 :duration 24 :active true :pct 0.0}]
+        state (-> (st/initial-state)
+                  (assoc :cont-offers offers
+                         :message {:text "Hi" :face 0})
+                  (dlg/open-contracts-dialog))]
+    (is (false? (show-face-message? state)))))
+
+(deftest face-message-shown-when-non-contracts-dialog-open
+  (let [state (-> (st/initial-state)
+                  (assoc :message {:text "Hi" :face 0})
+                  (dlg/open-dialog :buy-sell {:commodity :wheat}))]
+    (is (true? (show-face-message? state)))))
+
+(deftest face-message-hidden-when-no-message
+  (is (false? (show-face-message? (st/initial-state)))))
