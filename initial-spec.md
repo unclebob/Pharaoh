@@ -656,6 +656,47 @@ Old contracts have a 20% chance of being replaced; contracts with fewer than
 (multiplied by uniform(1.01, 1.1)); aging sell-contracts decrease (multiplied
 by uniform(0.90, 0.99)).
 
+### Contract Expiration
+
+Contracts settle as a **lump sum when the duration expires** (months-left
+reaches 0). Between acceptance and expiration, only default checks occur —
+no goods or gold change hands until settlement.
+
+**Each month per pending contract:**
+1. Default check — if `uniform(0,1) < (1 - default-k)`, contract cancels;
+   player receives 5% of `price * amount` as penalty payment.
+2. Decrement months-left.
+3. If months-left <= 0, settle:
+
+**BUY settlement** (counterparty buys from player):
+- Determine `can-buy`: full amount if pay-k check passes, else
+  `amount * uniform(0.5, 0.95)`.
+- If player has insufficient goods: deliver all available, receive payment
+  at per-unit price, penalty 10% of remaining value deducted, commodity
+  zeroed. Contract amount reduced; re-settles next month.
+- If counterparty can't buy all: deliver `can-buy`, receive payment, bonus
+  10% of remaining value. Contract amount reduced.
+- Full buy: deliver all, receive `price * amount`. Contract deactivated.
+
+**SELL settlement** (counterparty sells to player):
+- Determine `can-sell`: full amount if ship-k check passes, else
+  `amount * uniform(0.5, 0.95)`.
+- If player has insufficient gold: penalty 10% of total value deducted,
+  buy what remaining gold allows. Contract adjusted.
+- If counterparty can't ship all: partial delivery, pay for delivered,
+  bonus 10% of remaining. Contract adjusted.
+- Full sell: pay `price * amount`, receive all goods. Contract deactivated.
+
+**Livestock health blending:** When receiving livestock (slaves, oxen,
+horses) via SELL contracts, the incoming animals have health 0.9. Blended
+health = `(existing-health * existing-count + 0.9 * added) / (existing + added)`.
+
+**Messages:** Each settlement outcome generates a face-message dialog
+formatted as: "Regarding your contract with [name] for [amount] [commodity]:
+[pool message]". The face portrait is `who mod 4`. Messages queue in
+`:contract-msgs` and pop to `:message` one at a time — first after the
+month simulation, then on each key dismiss.
+
 ---
 
 ## Messages

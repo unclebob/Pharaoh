@@ -81,7 +81,11 @@
     (handle-dialog-key rng state key-char key-kw)
 
     (map? (:message state))
-    (dissoc state :message)
+    (let [state (dissoc state :message)]
+      (if (seq (:contract-msgs state))
+        (let [[msg & rest] (:contract-msgs state)]
+          (assoc state :message msg :contract-msgs (vec rest)))
+        state))
 
     :else
     (if-let [action (get key-actions key-char)]

@@ -274,3 +274,43 @@ Feature: Contracts
     And the contracts dialog is in confirming mode for acceptance
     When the player presses 'y'
     Then the acceptance is rejected with an error
+
+  # -----------------------------------------------------------
+  # Contract Expiration Messages
+  # -----------------------------------------------------------
+
+  Scenario: BUY contract expiration shows face message
+    Given the game is running
+    And a pending BUY contract for 500 wheat at 10 gold due this month
+    And the player has 500 or more wheat
+    When the contract comes due
+    Then a contract expiration message is queued
+    And the message mentions the counterparty name and commodity
+
+  Scenario: SELL contract expiration shows face message
+    Given the game is running
+    And a pending SELL contract for 1000 bushels of wheat at 20 gold
+    And the player has enough gold to pay
+    When the contract comes due
+    Then a contract expiration message is queued
+    And the message mentions the counterparty name and commodity
+
+  Scenario: Default generates a face message
+    Given the game is running
+    And a pending contract that will default
+    When the contract comes due
+    Then a contract expiration message is queued
+
+  Scenario: Contract message is displayed after month simulation
+    Given the game is running
+    And a pending BUY contract for 100 wheat at 10 gold due this month
+    And the player has 100 or more wheat
+    When a month is simulated without an event
+    Then a face message dialog appears with contract narration text
+
+  Scenario: Dismissing contract message shows next queued message
+    Given the game is running
+    And there are 2 queued contract messages
+    And the first message is displayed
+    When any key is pressed to dismiss
+    Then the second message is displayed

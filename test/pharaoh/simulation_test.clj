@@ -191,6 +191,22 @@
     (is (some #{(:text (:message result))} msg/foreclosure-messages))
     (is (= (:banker state) (:face (:message result))))))
 
+(deftest do-run-pops-contract-msg
+  (let [rng (r/make-rng 42) ;; seed 42 = no event
+        players [{:pay-k 1.0 :ship-k 1.0 :default-k 1.0 :name "King HamuNam"}]
+        contract {:type :buy :who 0 :what :wheat :amount 100.0
+                  :price 10.0 :duration 12 :active true :pct 0.0
+                  :months-left 1}
+        state (assoc (game-state)
+                :players players
+                :cont-pend [contract]
+                :wheat 100.0)
+        result (sim/do-run rng state)]
+    ;; Contract expired → contract-msg generated → popped to :message
+    (is (map? (:message result)))
+    (is (string? (:text (:message result))))
+    (is (number? (:face (:message result))))))
+
 (deftest no-debt-warning-when-healthy
   (let [rng (r/make-rng 42)
         state (assoc (game-state)

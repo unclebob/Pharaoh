@@ -193,6 +193,13 @@
       check-win
       (assoc :wk-addition 0.0)))
 
+(defn- pop-contract-msg [state]
+  (if (and (not (map? (:message state)))
+           (seq (:contract-msgs state)))
+    (let [[msg & rest] (:contract-msgs state)]
+      (assoc state :message msg :contract-msgs (vec rest)))
+    state))
+
 (defn do-run [rng state]
   (let [state (record-old state)
         event? (< (r/uniform rng 0.0 8.0) 1.0)
@@ -205,4 +212,4 @@
       (let [msg (ev/event-message rng etype nil)
             face (long (r/uniform rng 0 4))]
         (assoc state :message {:text (or msg "Something happened...") :face face}))
-      state)))
+      (pop-contract-msg state))))

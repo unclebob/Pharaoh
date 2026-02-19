@@ -700,6 +700,78 @@
    {:type :then :pattern #"the contract is marked inactive"
     :handler (fn [w] w)}
 
+   ;; ===== Contract Expiration Messages =====
+   {:type :given :pattern #"a pending contract that will default"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     players [{:pay-k 1.0 :ship-k 1.0 :default-k 0.0
+                                :name "King HamuNam"}]]
+                 (-> w
+                     (assoc-in [:state :players] players)
+                     (assoc-in [:state :cont-pend]
+                               [{:type :buy :active true :who 0 :what :wheat
+                                 :amount 100.0 :price 10.0 :duration 12
+                                 :pct 0.0 :months-left 6}]))))}
+
+   {:type :given :pattern #"there are (\d+) queued contract messages"
+    :handler (fn [w n]
+               (let [cnt (Integer/parseInt n)
+                     msgs (vec (for [i (range cnt)]
+                                 {:text (str "Contract message " (inc i))
+                                  :face i}))]
+                 (assoc-in w [:state :contract-msgs] msgs)))}
+
+   {:type :given :pattern #"the first message is displayed"
+    :handler (fn [w]
+               (let [msgs (get-in w [:state :contract-msgs])
+                     first-msg (first msgs)]
+                 (-> w
+                     (assoc-in [:state :message] first-msg)
+                     (assoc-in [:state :contract-msgs] (vec (rest msgs))))))}
+
+   {:type :when :pattern #"a month is simulated without an event"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     ;; seed 42 does not trigger event (uniform(0,8) >= 1.0)
+                     rng (r/make-rng 42)]
+                 (assoc w :state (sim/do-run rng (:state w)))))}
+
+   {:type :when :pattern #"any key is pressed to dismiss"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (inp/handle-key (:rng w) (:state w) \space)]
+                 (assoc w :state s)))}
+
+   {:type :then :pattern #"a contract expiration message is queued"
+    :handler (fn [w]
+               (assert (seq (:contract-msgs (:state w)))
+                       (str "Expected contract-msgs but got "
+                            (:contract-msgs (:state w))))
+               w)}
+
+   {:type :then :pattern #"the message mentions the counterparty name and commodity"
+    :handler (fn [w]
+               (let [msg (:text (first (:contract-msgs (:state w))))]
+                 (assert (re-find #"Regarding your contract with" msg)
+                         (str "Expected contract message format, got: " msg)))
+               w)}
+
+   {:type :then :pattern #"a face message dialog appears with contract narration text"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (string? (:text m)) "Expected text string")
+                 (assert (number? (:face m)) "Expected face number"))
+               w)}
+
+   {:type :then :pattern #"the second message is displayed"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (= "Contract message 2" (:text m))
+                         (str "Expected 'Contract message 2' but got '" (:text m) "'")))
+               w)}
+
    ;; ===== Neighbors =====
    {:type :given :pattern #"the good guy visits"
     :handler (fn [w] (assoc w :visiting :good-guy))}

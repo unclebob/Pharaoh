@@ -494,3 +494,26 @@
         [mx my] (click-coords 5 11)
         result (inp/handle-mouse state mx my)]
     (is (= :contracts (get-in result [:dialog :type])))))
+
+;; ---- contract message queue ----
+
+(deftest dismiss-message-pops-next-contract-msg
+  (let [rng (r/make-rng 42)
+        msg1 {:text "First message" :face 0}
+        msg2 {:text "Second message" :face 1}
+        state (assoc (st/initial-state)
+                :message msg1
+                :contract-msgs [msg2])
+        result (inp/handle-key rng state \space)]
+    ;; Dismissing msg1 should pop msg2 to :message
+    (is (= msg2 (:message result)))
+    (is (empty? (:contract-msgs result)))))
+
+(deftest dismiss-message-no-queue
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state)
+                :message {:text "Only message" :face 0}
+                :contract-msgs [])
+        result (inp/handle-key rng state \space)]
+    ;; No more queued messages, message should be nil
+    (is (nil? (:message result)))))
