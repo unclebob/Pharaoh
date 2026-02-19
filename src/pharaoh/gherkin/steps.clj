@@ -20,6 +20,7 @@
             [pharaoh.trading :as tr]
             [pharaoh.ui.dialogs :as dlg]
             [pharaoh.ui.input :as inp]
+            [pharaoh.ui.layout :as lay]
             [pharaoh.visits :as vis]
             [pharaoh.workload :as wk]))
 
@@ -1287,6 +1288,24 @@
                      s (dlg/open-contracts-dialog s)
                      s (dlg/confirm-selected s)]
                  (assoc w :state s)))}
+
+   {:type :when :pattern #"the player clicks on offer row (\d+)"
+    :handler (fn [w idx-str]
+               (let [idx (Integer/parseInt idx-str)
+                     {:keys [y]} (lay/cell-rect-span 2 5 7 14)
+                     y0 (+ y (* lay/title-size 2) lay/small-size 8)
+                     row-h (+ lay/label-size 4)
+                     mx (+ (:x (lay/cell-rect-span 2 5 7 14)) 50)
+                     my (+ y0 (* idx row-h) (/ row-h 2))
+                     s (inp/handle-mouse (:state w) mx my)]
+                 (assoc w :state s)))}
+
+   {:type :then :pattern #"the selected offer index is (\d+)"
+    :handler (fn [w expected]
+               (let [sel (get-in w [:state :dialog :selected])]
+                 (assert (= (Integer/parseInt expected) sel)
+                         (str "Expected selected " expected " but got " sel)))
+               w)}
 
    {:type :when :pattern #"the player presses the down arrow"
     :handler (fn [w]

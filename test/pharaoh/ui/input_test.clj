@@ -495,6 +495,50 @@
         result (inp/handle-mouse state mx my)]
     (is (= :contracts (get-in result [:dialog :type])))))
 
+;; ---- contract dialog click-to-select ----
+
+(defn- offer-row-y
+  "Compute pixel y for the center of offer row idx in the contracts dialog."
+  [idx]
+  (let [{:keys [y]} (lay/cell-rect-span 2 5 7 14)
+        y0 (+ y (* lay/title-size 2) lay/small-size 8)
+        row-h (+ lay/label-size 4)]
+    (+ y0 (* idx row-h) (/ row-h 2))))
+
+(defn- dialog-center-x []
+  (let [{:keys [x w]} (lay/cell-rect-span 2 5 7 14)]
+    (+ x (/ w 2))))
+
+(deftest click-offer-row-selects-it
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog))
+        mx (dialog-center-x)
+        my (offer-row-y 2)
+        result (inp/handle-mouse state mx my)]
+    (is (= 2 (get-in result [:dialog :selected])))))
+
+(deftest click-selected-offer-confirms-it
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers
+                         :players [{:name "Test"}])
+                  (dlg/open-contracts-dialog))
+        mx (dialog-center-x)
+        my (offer-row-y 0)
+        result (inp/handle-mouse state mx my)]
+    (is (= :confirming (get-in result [:dialog :mode])))))
+
+(deftest click-outside-offer-area-does-nothing
+  (let [state (-> (st/initial-state)
+                  (assoc :cont-offers test-offers)
+                  (dlg/open-contracts-dialog))
+        mx (dialog-center-x)
+        ;; Click well below all offer rows
+        my (+ (offer-row-y 4) 200)
+        result (inp/handle-mouse state mx my)]
+    (is (= :browsing (get-in result [:dialog :mode])))
+    (is (= 0 (get-in result [:dialog :selected])))))
+
 ;; ---- contract message queue ----
 
 (deftest dismiss-message-pops-next-contract-msg

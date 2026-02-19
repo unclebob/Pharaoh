@@ -105,10 +105,27 @@
 (defn- commodity-for-row [row]
   (case row 1 :wheat 2 :manure 3 :slaves 4 :horses 5 :oxen 6 :land nil))
 
+(defn- handle-contract-click [state my]
+  (let [{:keys [y]} (lay/cell-rect-span 2 5 7 14)
+        y0 (+ y (* lay/title-size 2) lay/small-size 8)
+        row-h (+ lay/label-size 4)
+        idx (int (/ (- my y0) row-h))
+        n (count (get-in state [:dialog :active-offers]))
+        sel (get-in state [:dialog :selected])]
+    (if (and (>= idx 0) (< idx n))
+      (if (= idx sel)
+        (dlg/confirm-selected state)
+        (assoc-in state [:dialog :selected] idx))
+      state)))
+
 (defn handle-mouse [state mx my]
   (let [col (int (/ (- mx lay/pad) lay/cell-w))
         row (int (/ (- my lay/pad) lay/cell-h))]
     (cond
+      (and (= :contracts (get-in state [:dialog :type]))
+           (= :browsing (get-in state [:dialog :mode])))
+      (handle-contract-click state my)
+
       ;; RUN button (cols 8-9, row 23)
       (and (<= 8 col 9) (= row 23))
       (assoc state :run-clicked true)
