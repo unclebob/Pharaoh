@@ -1105,9 +1105,12 @@
                (assoc w :state (ln/emergency-loan (:state w))))}
    {:type :when :pattern #"foreclosure is checked"
     :handler (fn [w]
-               (let [s (:state w)]
+               (let [w (ensure-rng w)
+                     s (:state w)]
                  (if (ln/foreclosed? s)
-                   (assoc w :state (assoc s :game-over true))
+                   (assoc w :state (assoc s :game-over true
+                                          :message {:text (msg/pick (:rng w) msg/foreclosure-messages)
+                                                    :face (:banker s)}))
                    w)))}
 
    {:type :then :pattern #"the player's gold becomes positive"
@@ -1295,6 +1298,15 @@
                    (assoc-in [:state :loan] 2050000.0)
                    (assoc-in [:state :credit-rating] 0.8)
                    (assoc-in [:state :gold] 2000000.0)))}
+
+   {:type :then :pattern #"a face message dialog appears with a foreclosure message"
+    :handler (fn [w]
+               (let [m (get-in w [:state :message])]
+                 (assert (map? m) "Expected face message map")
+                 (assert (string? (:text m)) "Expected text string")
+                 (assert (some #{(:text m)} msg/foreclosure-messages)
+                         (str "Expected foreclosure message, got: " (:text m))))
+               w)}
 
    {:type :then :pattern #"a face message dialog appears with a foreclosure warning"
     :handler (fn [w]

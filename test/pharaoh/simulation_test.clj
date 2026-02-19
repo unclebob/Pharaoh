@@ -176,6 +176,21 @@
     (is (some #{(:text (:message result))} msg/foreclosure-warning-messages))
     (is (= (:banker state) (:face (:message result))))))
 
+(deftest foreclosure-sets-banker-message
+  (let [rng (r/make-rng 42)
+        state (assoc (game-state)
+                :loan 100000.0 :credit-rating 0.3
+                :gold 100.0 :wheat 0.0 :slaves 0.0
+                :oxen 0.0 :horses 0.0 :manure 0.0
+                :ln-fallow 0.0 :ln-sewn 0.0
+                :ln-grown 0.0 :ln-ripe 0.0)
+        result (sim/run-month rng state)]
+    (is (:game-over result))
+    (is (map? (:message result)))
+    (is (string? (:text (:message result))))
+    (is (some #{(:text (:message result))} msg/foreclosure-messages))
+    (is (= (:banker state) (:face (:message result))))))
+
 (deftest no-debt-warning-when-healthy
   (let [rng (r/make-rng 42)
         state (assoc (game-state)

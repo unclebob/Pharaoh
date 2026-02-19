@@ -227,6 +227,8 @@ Feature: Loans
     And the player has minimal assets
     When foreclosure is checked
     Then the bank forecloses
+    And a face message dialog appears with a foreclosure message
+    And the message has the banker face portrait
     And the game ends
 
   Scenario: No foreclosure when debt-to-asset ratio is safe

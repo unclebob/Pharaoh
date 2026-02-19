@@ -139,9 +139,11 @@
 (defn- check-emergency-loan [state]
   (ln/emergency-loan state))
 
-(defn- check-foreclosure [state]
+(defn- check-foreclosure [state rng]
   (if (ln/foreclosed? state)
-    (assoc state :game-over true)
+    (assoc state :game-over true
+           :message {:text (msg/pick rng msg/foreclosure-messages)
+                     :face (:banker state)})
     state))
 
 (defn- check-debt-warning [state rng]
@@ -186,7 +188,7 @@
       apply-credit-update
       check-emergency-loan
       update-net-worth
-      check-foreclosure
+      (check-foreclosure rng)
       (check-debt-warning rng)
       check-win
       (assoc :wk-addition 0.0)))
