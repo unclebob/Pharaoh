@@ -64,6 +64,33 @@
 (defn set-dialog-mode [state mode]
   (assoc-in state [:dialog :mode] mode))
 
+(defn accept-credit-check [rng state]
+  (let [d (:dialog state)
+        fee (:fee d)
+        amt (:borrow-amt d)
+        total-amt (+ amt fee)
+        state (-> state (update :gold - fee))
+        state (ln/credit-check rng state)
+        new-limit (:credit-limit state)]
+    (if (<= (+ (:loan state) total-amt) new-limit)
+      (let [int-rate (+ (:interest state) (:int-addition state))
+            m (format (msg/pick rng msg/loan-approval-messages) total-amt int-rate)]
+        (-> state
+            (update :loan + total-amt)
+            (update :gold + amt)
+            (dissoc :dialog)
+            (assoc :message {:text m :face (:banker state)})))
+      (let [m (msg/pick rng msg/loan-denial-messages)]
+        (-> state
+            (dissoc :dialog)
+            (assoc :message {:text m :face (:banker state)}))))))
+
+(defn reject-credit-check [state]
+  (assoc state :dialog
+         (-> (:dialog state)
+             (assoc :mode nil :input "")
+             (dissoc :fee :borrow-amt :message))))
+
 (defn- parse-input [input]
   (try (Double/parseDouble input) (catch Exception _ nil)))
 
@@ -99,9 +126,18 @@
 
           :loan
           (case (:mode d)
-            :borrow (let [result (ln/borrow state amt)]
-                      (if (:error result)
+            :borrow (let [result (ln/borrow rng state amt)]
+                      (cond
+                        (:needs-credit-check result)
+                        (let [fee (:fee result)
+                              m (format (msg/pick rng msg/credit-check-messages) fee)]
+                          (assoc state :dialog
+                                 (assoc d :mode :credit-check
+                                          :fee fee :borrow-amt amt
+                                          :message m)))
+                        (:error result)
                         (assoc state :message (:error result))
+                        :else
                         (close-dialog result)))
             :repay (let [result (ln/repay state amt)]
                      (if (:error result)

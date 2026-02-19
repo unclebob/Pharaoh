@@ -5,24 +5,28 @@
             [pharaoh.state :as st]))
 
 (deftest borrow-within-limit
-  (let [state (assoc (st/initial-state) :credit-limit 100000.0 :loan 0.0 :gold 5000.0)
-        result (ln/borrow state 50000.0)]
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :credit-limit 100000.0 :loan 0.0 :gold 5000.0)
+        result (ln/borrow rng state 50000.0)]
     (is (== 50000.0 (:loan result)))
     (is (== 55000.0 (:gold result)))))
 
 (deftest borrow-near-limit-increases-interest
-  (let [state (assoc (st/initial-state)
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state)
                 :credit-limit 100000.0 :loan 85000.0
                 :gold 5000.0 :int-addition 0.0)
-        result (ln/borrow state 5000.0)]
+        result (ln/borrow rng state 5000.0)]
     (is (== 90000.0 (:loan result)))
     (is (== 0.2 (:int-addition result)))))
 
-(deftest borrow-exceeding-limit-returns-error
-  (let [state (assoc (st/initial-state)
+(deftest borrow-exceeding-limit-returns-credit-check
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state)
                 :credit-limit 100000.0 :loan 80000.0 :gold 5000.0)
-        result (ln/borrow state 30000.0)]
-    (is (= "Exceeds credit limit" (:error result)))))
+        result (ln/borrow rng state 30000.0)]
+    (is (true? (:needs-credit-check result)))
+    (is (pos? (:fee result)))))
 
 (deftest credit-check-recalculates-limit
   (let [rng (r/make-rng 42)

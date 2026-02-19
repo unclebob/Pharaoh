@@ -121,6 +121,53 @@
     (is (nil? (:dialog result)))
     (is (== 50.0 (:ln-to-sew result)))))
 
+;; ---- handle-key: credit-check mode in loan dialog ----
+
+(deftest handle-key-y-in-credit-check-mode-accepts
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :credit-limit 100.0 :loan 0.0
+                         :gold 50000.0 :credit-rating 0.8
+                         :credit-lower 500000.0
+                         :wheat 1000.0 :slaves 50.0 :oxen 20.0 :horses 10.0
+                         :sl-health 0.8 :ox-health 0.9 :hs-health 0.7
+                         :ln-fallow 100.0 :manure 200.0
+                         :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                                  :horses 500.0 :oxen 300.0 :land 5000.0})
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 100.0)
+                  (assoc-in [:dialog :borrow-amt] 1000.0))
+        result (inp/handle-key rng state \y)]
+    ;; Should close dialog (accept processes the credit check)
+    (is (nil? (:dialog result)))
+    ;; Should have a face message
+    (is (map? (:message result)))))
+
+(deftest handle-key-n-in-credit-check-mode-rejects
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 100.0)
+                  (assoc-in [:dialog :borrow-amt] 1000.0))
+        result (inp/handle-key rng state \n)]
+    ;; Dialog should still be open, mode nil
+    (is (some? (:dialog result)))
+    (is (nil? (get-in result [:dialog :mode])))))
+
+(deftest handle-key-esc-in-credit-check-mode-rejects
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 100.0)
+                  (assoc-in [:dialog :borrow-amt] 1000.0))
+        result (inp/handle-key rng state esc-char)]
+    ;; Dialog should still be open, mode nil (reject, not close)
+    (is (some? (:dialog result)))
+    (is (nil? (get-in result [:dialog :mode])))))
+
 ;; ---- handle-key: face message mode ----
 
 (deftest handle-key-dismisses-face-message

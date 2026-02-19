@@ -201,7 +201,7 @@
       (is (== 1000.0 (:loan result)))
       (is (== 1000.0 (:gold result))))))
 
-(deftest execute-dialog-borrow-exceeds-credit-limit
+(deftest execute-dialog-borrow-exceeds-limit-enters-credit-check
   (let [rng (r/make-rng 42)
         state (-> (st/initial-state)
                   (assoc :credit-limit 100.0)
@@ -209,7 +209,80 @@
                   (dlg/set-dialog-mode :borrow)
                   (assoc-in [:dialog :input] "1000"))]
     (let [result (dlg/execute-dialog rng state)]
-      (is (= "Exceeds credit limit" (:message result))))))
+      (is (= :credit-check (get-in result [:dialog :mode])))
+      (is (pos? (get-in result [:dialog :fee])))
+      (is (== 1000.0 (get-in result [:dialog :borrow-amt])))
+      (is (string? (get-in result [:dialog :message]))))))
+
+(deftest accept-credit-check-grants-loan-when-limit-sufficient
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :credit-limit 100.0 :loan 0.0
+                         :gold 50000.0 :credit-rating 0.8
+                         :credit-lower 500000.0
+                         :wheat 1000.0 :slaves 50.0 :oxen 20.0 :horses 10.0
+                         :sl-health 0.8 :ox-health 0.9 :hs-health 0.7
+                         :ln-fallow 100.0 :manure 200.0
+                         :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                                  :horses 500.0 :oxen 300.0 :land 5000.0}
+                         :interest 5.0 :int-addition 0.0)
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 100.0)
+                  (assoc-in [:dialog :borrow-amt] 1000.0))
+        result (dlg/accept-credit-check rng state)]
+    ;; Dialog should be closed
+    (is (nil? (:dialog result)))
+    ;; Loan should include the borrow amount + fee (C code: amt += cost)
+    (is (== 1100.0 (:loan result)))
+    ;; Gold should increase by borrow-amt (1000) minus fee (100)
+    (is (== (+ 50000.0 1000.0 (- 100.0)) (:gold result)))
+    ;; Face message shows approval
+    (is (map? (:message result)))
+    (is (string? (:text (:message result))))))
+
+(deftest accept-credit-check-denies-loan-when-limit-insufficient
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :credit-limit 100.0 :loan 0.0
+                         :gold 50000.0 :credit-rating 0.01
+                         :credit-lower 0.0
+                         :wheat 0.0 :slaves 0.0 :oxen 0.0 :horses 0.0
+                         :sl-health 0.0 :ox-health 0.0 :hs-health 0.0
+                         :ln-fallow 0.0 :manure 0.0
+                         :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                                  :horses 500.0 :oxen 300.0 :land 5000.0})
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 100.0)
+                  (assoc-in [:dialog :borrow-amt] 100000.0))
+        result (dlg/accept-credit-check rng state)]
+    ;; Dialog should be closed
+    (is (nil? (:dialog result)))
+    ;; Fee is deducted from gold
+    (is (== (- 50000.0 100.0) (:gold result)))
+    ;; Loan should NOT include the borrow amount
+    (is (== 0.0 (:loan result)))
+    ;; Face message shows denial
+    (is (map? (:message result)))
+    (is (string? (:text (:message result))))))
+
+(deftest reject-credit-check-returns-to-input
+  (let [state (-> (st/initial-state)
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 100.0)
+                  (assoc-in [:dialog :borrow-amt] 1000.0)
+                  (assoc-in [:dialog :message] "Pay up!"))
+        result (dlg/reject-credit-check state)]
+    ;; Mode goes back to nil (standard loan input)
+    (is (nil? (get-in result [:dialog :mode])))
+    ;; Fee/borrow-amt/message cleared from dialog
+    (is (nil? (get-in result [:dialog :fee])))
+    (is (nil? (get-in result [:dialog :borrow-amt])))
+    (is (nil? (get-in result [:dialog :message])))
+    ;; Input cleared
+    (is (= "" (get-in result [:dialog :input])))))
 
 (deftest execute-dialog-repay-success
   (let [rng (r/make-rng 42)

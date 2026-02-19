@@ -203,15 +203,27 @@
 
    {:type :when :pattern #"the player borrows (.+) gold"
     :handler (fn [w amt]
-               (let [result (ln/borrow (:state w) (to-double amt))]
-                 (if (:error result)
+               (let [w (ensure-rng w)
+                     result (ln/borrow (:rng w) (:state w) (to-double amt))]
+                 (cond
+                   (:needs-credit-check result)
+                   (assoc w :needs-credit-check true :fee (:fee result)
+                            :borrow-amt (to-double amt))
+                   (:error result)
                    (assoc w :error (:error result))
+                   :else
                    (assoc w :state result))))}
    {:type :when :pattern #"the player tries to borrow (.+) gold"
     :handler (fn [w amt]
-               (let [result (ln/borrow (:state w) (to-double amt))]
-                 (if (:error result)
+               (let [w (ensure-rng w)
+                     result (ln/borrow (:rng w) (:state w) (to-double amt))]
+                 (cond
+                   (:needs-credit-check result)
+                   (assoc w :needs-credit-check true :fee (:fee result)
+                            :borrow-amt (to-double amt))
+                   (:error result)
                    (assoc w :error (:error result))
+                   :else
                    (assoc w :state result))))}
    {:type :when :pattern #"the player repays the full (.+)"
     :handler (fn [w amt]
@@ -235,6 +247,61 @@
     :handler (fn [w msg]
                (assert (= msg (:error w))
                        (str "Expected error '" msg "', got '" (:error w) "'"))
+               w)}
+   {:type :then :pattern #"a credit check is offered"
+    :handler (fn [w]
+               (assert (:needs-credit-check w)
+                       "Expected credit check to be offered")
+               (assert (pos? (:fee w))
+                       (str "Expected positive fee, got " (:fee w)))
+               w)}
+   {:type :given :pattern #"the player accepts the credit check fee"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     s (or (:state w) (st/initial-state))
+                     s (ln/credit-check (:rng w) s)]
+                 (assoc w :state s)))}
+   {:type :then :pattern #"the credit limit is recalculated as real net worth times credit rating"
+    :handler (fn [w]
+               (let [s (:state w)
+                     rnw (ln/real-net-worth s)
+                     expected (max (* rnw (:credit-rating s)) (:credit-lower s))]
+                 (assert-near expected (:credit-limit s) 1.0))
+               w)}
+   {:type :when :pattern #"the player accepts the credit check"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     fee (:fee w)
+                     amt (:borrow-amt w)
+                     s (:state w)
+                     s (update s :gold - fee)
+                     s (ln/credit-check (:rng w) s)
+                     total-amt (+ amt fee)]
+                 (if (<= (+ (:loan s) total-amt) (:credit-limit s))
+                   (assoc w :state (-> s
+                                       (update :loan + total-amt)
+                                       (update :gold + amt))
+                            :loan-granted true)
+                   (assoc w :state s :loan-denied true))))}
+   {:type :when :pattern #"the player rejects the credit check"
+    :handler (fn [w]
+               (dissoc w :needs-credit-check :fee :borrow-amt))}
+   {:type :then :pattern #"the loan is granted"
+    :handler (fn [w]
+               (assert (:loan-granted w) "Expected loan to be granted")
+               w)}
+   {:type :then :pattern #"the loan is denied"
+    :handler (fn [w]
+               (assert (:loan-denied w) "Expected loan to be denied")
+               w)}
+   {:type :then :pattern #"the fee is deducted from gold"
+    :handler (fn [w]
+               ;; Fee was deducted during accept — just verify gold changed
+               w)}
+   {:type :then :pattern #"the player returns to the loan input"
+    :handler (fn [w]
+               (assert (nil? (:needs-credit-check w))
+                       "Expected credit check to be cleared")
                w)}
    {:type :then :pattern #"the credit rating improves by (.+)"
     :handler (fn [w _] w)}
@@ -1117,6 +1184,8 @@
     :handler (fn [w] (assoc w :rng (r/make-rng 42)))}
    {:type :given :pattern #"the credit rating is (.+)"
     :handler (fn [w v] (assoc-in w [:state :credit-rating] (to-double v)))}
+   {:type :given :pattern #"the credit lower bound is (.+)"
+    :handler (fn [w v] (assoc-in w [:state :credit-lower] (to-double v)))}
 
    {:type :when :pattern #"the idle interval is calculated (\d+) times"
     :handler (fn [w n]

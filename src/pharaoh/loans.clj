@@ -4,6 +4,9 @@
             [pharaoh.state :as st]
             [pharaoh.tables :as t]))
 
+(defn credit-check-fee [rng total-debt]
+  (* total-debt (r/gaussian rng 0.05 0.01)))
+
 (defn real-net-worth [state]
   (let [p (:prices state)
         lt (st/total-land state)]
@@ -16,9 +19,11 @@
        (:gold state)
        (- (:loan state)))))
 
-(defn borrow [state amt]
+(defn borrow [rng state amt]
   (if (> (+ (:loan state) amt) (:credit-limit state))
-    {:error "Exceeds credit limit"}
+    (let [total-debt (+ (:loan state) amt)]
+      {:needs-credit-check true
+       :fee (credit-check-fee rng total-debt)})
     (let [new-loan (+ (:loan state) amt)
           headroom (/ (- (:credit-limit state) new-loan)
                       (:credit-limit state))
@@ -34,9 +39,6 @@
         new-limit (* rnw (:credit-rating state))]
     (assoc state :credit-limit
            (max new-limit (:credit-lower state)))))
-
-(defn credit-check-fee [rng total-debt]
-  (* total-debt (r/gaussian rng 0.05 0.01)))
 
 (defn repay [state amt]
   (cond

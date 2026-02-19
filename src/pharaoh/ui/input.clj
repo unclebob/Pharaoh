@@ -63,17 +63,28 @@
 
       :else state)))
 
+(defn- credit-check-mode? [state]
+  (and (= :loan (get-in state [:dialog :type]))
+       (= :credit-check (get-in state [:dialog :mode]))))
+
 (defn- handle-dialog-key [rng state key-char key-kw]
   (if (= :contracts (get-in state [:dialog :type]))
     (handle-contracts-key state key-char key-kw)
-    (cond
-      (= key-char esc-char) (dlg/close-dialog state)
-      (or (= key-char \return) (= key-char \newline))
-      (dlg/execute-dialog rng (dissoc state :message))
-      :else
-      (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
-        (dlg/set-dialog-mode state mode)
-        (dlg/update-dialog-input state key-char)))))
+    (if (credit-check-mode? state)
+      (case key-char
+        \y (dlg/accept-credit-check rng state)
+        \n (dlg/reject-credit-check state)
+        (if (= key-char esc-char)
+          (dlg/reject-credit-check state)
+          state))
+      (cond
+        (= key-char esc-char) (dlg/close-dialog state)
+        (or (= key-char \return) (= key-char \newline))
+        (dlg/execute-dialog rng (dissoc state :message))
+        :else
+        (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
+          (dlg/set-dialog-mode state mode)
+          (dlg/update-dialog-input state key-char))))))
 
 (defn handle-key [rng state key-char & [key-kw]]
   (cond

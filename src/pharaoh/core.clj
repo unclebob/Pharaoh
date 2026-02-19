@@ -55,15 +55,17 @@
     :plant "p" :spread "f" :pyramid "q" nil))
 
 (defn- dialog-help [d]
-  (case (:type d)
-    :buy-sell "b=buy s=sell  Enter=ok  Esc=cancel"
-    :loan "b=borrow r=repay  Enter=ok  Esc=cancel"
-    :overseer "h=hire f=fire  Enter=ok  Esc=cancel"
-    :feed "Enter amount, Enter=ok  Esc=cancel"
-    :plant "Enter acres, Enter=ok  Esc=cancel"
-    :spread "Enter tons, Enter=ok  Esc=cancel"
-    :pyramid "Enter stones, Enter=ok  Esc=cancel"
-    "Enter=ok  Esc=cancel"))
+  (if (= :credit-check (:mode d))
+    "y=yes  n=no"
+    (case (:type d)
+      :buy-sell "b=buy s=sell  Enter=ok  Esc=cancel"
+      :loan "b=borrow r=repay  Enter=ok  Esc=cancel"
+      :overseer "h=hire f=fire  Enter=ok  Esc=cancel"
+      :feed "Enter amount, Enter=ok  Esc=cancel"
+      :plant "Enter acres, Enter=ok  Esc=cancel"
+      :spread "Enter tons, Enter=ok  Esc=cancel"
+      :pyramid "Enter stones, Enter=ok  Esc=cancel"
+      "Enter=ok  Esc=cancel")))
 
 (defn- draw-dialog [state icons]
   (when-let [d (:dialog state)]
@@ -89,7 +91,12 @@
         (q/text title text-x (+ y lay/title-size 8))
         (q/fill 0)
         (q/text-size lay/value-size)
-        (q/text (str "Amount: " (:input d)) text-x (+ y (* lay/value-size 3) 8))
+        (if (= :credit-check (:mode d))
+          (do
+            (q/text-leading (* lay/value-size 1.3))
+            (q/text (str (:message d)) text-x (+ y (* lay/value-size 3) 8)
+                    (- (+ x w) text-x 8) (- h 60)))
+          (q/text (str "Amount: " (:input d)) text-x (+ y (* lay/value-size 3) 8)))
         (q/text-size lay/small-size)
         (q/fill 100)
         (q/text (dialog-help d) text-x (+ y (* lay/value-size 5) 8))))))

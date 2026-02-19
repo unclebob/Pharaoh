@@ -18,11 +18,11 @@ Feature: Loans
     Then the loan balance should be 50000
     And the player's gold should increase by 50000
 
-  Scenario: Borrow exceeding credit limit is refused
+  Scenario: Borrow exceeding credit limit offers credit check
     Given the credit limit is 100000
     And the current loan is 80000
     When the player tries to borrow 30000 gold
-    Then the borrow is refused with "Exceeds credit limit"
+    Then a credit check is offered
 
   Scenario: Credit check recalculates limit based on real net worth
     Given the player accepts the credit check fee
@@ -33,6 +33,34 @@ Feature: Loans
     #                + total land * land price + manure * manure price
     #                + wheat * wheat price + gold - loan
     # New credit limit = max(real net worth * credit rating, credit lower bound)
+
+  Scenario: Credit check accepted and loan granted
+    Given the credit limit is 100
+    And the current loan is 0
+    And the player has 50000 gold
+    And the player has 1000 wheat, 50 slaves, 20 oxen, 10 horses, 200 manure
+    And the credit rating is 0.8
+    When the player tries to borrow 1000 gold
+    And the player accepts the credit check
+    Then the loan is granted
+
+  Scenario: Credit check accepted but loan denied
+    Given the credit limit is 100
+    And the current loan is 0
+    And the player has 500 gold
+    And the credit rating is 0.01
+    And the credit lower bound is 0
+    When the player tries to borrow 100000 gold
+    And the player accepts the credit check
+    Then the loan is denied
+    And the fee is deducted from gold
+
+  Scenario: Credit check rejected returns to loan input
+    Given the credit limit is 100
+    And the current loan is 0
+    When the player tries to borrow 1000 gold
+    And the player rejects the credit check
+    Then the player returns to the loan input
 
   Scenario: Loan near limit increases interest
     Given the credit limit is 100000
