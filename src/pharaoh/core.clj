@@ -238,15 +238,19 @@
       (when-let [msg (:message state)]
         (when (map? msg) (draw-face-message msg faces))))))
 
+(defn- quit! []
+  (q/exit)
+  (future (Thread/sleep 500) (System/exit 0)))
+
 (defn- key-pressed [{:keys [screen] :as app} {:keys [raw-key key]}]
   (set! (.key (quil.applet/current-applet)) (char 0))
   (if (= :difficulty screen)
     (if (= (int raw-key) 27)
-      (do (q/exit) app)
+      (do (quit!) app)
       (su/select-difficulty app (su/difficulty-for-key raw-key)))
     (let [new-state (inp/handle-key (:rng app) (:state app) raw-key key)]
       (if (:quit-clicked new-state)
-        (do (q/exit) app)
+        (do (quit!) app)
         (assoc app :state new-state)))))
 
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
@@ -259,7 +263,7 @@
                (sim/do-run rng (dissoc new-state :run-clicked)))
 
         (:quit-clicked new-state)
-        (do (q/exit) app)
+        (do (quit!) app)
 
         :else
         (assoc app :state new-state)))))
