@@ -54,18 +54,43 @@
     :loan "L" :overseer "g"
     :plant "p" :spread "f" :pyramid "q" nil))
 
-(defn- dialog-help [d]
-  (if (= :credit-check (:mode d))
-    "y=yes  n=no"
-    (case (:type d)
-      :buy-sell "b=buy s=sell  Enter=ok  Esc=cancel"
-      :loan "b=borrow r=repay  Enter=ok  Esc=cancel"
-      :overseer "h=hire f=fire  Enter=ok  Esc=cancel"
-      :feed "Enter amount, Enter=ok  Esc=cancel"
-      :plant "Enter acres, Enter=ok  Esc=cancel"
-      :spread "Enter tons, Enter=ok  Esc=cancel"
-      :pyramid "Enter stones, Enter=ok  Esc=cancel"
-      "Enter=ok  Esc=cancel")))
+(def ^:private radio-labels
+  {:buy-sell ["Buy (b)" "Sell (s)"]
+   :loan     ["Borrow (b)" "Repay (r)"]
+   :overseer ["Hire (h)" "Fire (f)"]})
+
+(defn- draw-radio [x y label selected?]
+  (let [r 6 cx (+ x r) cy (+ y (/ lay/title-size 2))]
+    (if selected?
+      (do (q/fill 80 80 160) (q/no-stroke))
+      (do (q/no-fill) (q/stroke 160 160 160)))
+    (q/ellipse cx cy (* r 2) (* r 2))
+    (q/fill 0) (q/no-stroke)
+    (q/text-size lay/label-size)
+    (q/text label (+ x (* r 2) 4) (+ y lay/label-size -2))))
+
+(defn- draw-button [x y w h label fill-r fill-g fill-b stroke-r stroke-g stroke-b]
+  (q/fill fill-r fill-g fill-b)
+  (q/stroke stroke-r stroke-g stroke-b)
+  (q/rect x y w h 3)
+  (q/fill 0) (q/no-stroke)
+  (q/text-size lay/label-size)
+  (q/text label (+ x 6) (+ y lay/label-size -2)))
+
+(defn- draw-dialog-buttons [d]
+  (let [bounds (inp/dialog-button-bounds (:type d))
+        {:keys [ok cancel]} bounds]
+    (when-let [labels (radio-labels (:type d))]
+      (let [{r1 :radio1 r2 :radio2} bounds
+            mode (:mode d)]
+        (draw-radio (:x r1) (:y r1) (first labels)
+                    (= mode (inp/radio-mode-for (:type d) :radio1)))
+        (draw-radio (:x r2) (:y r2) (second labels)
+                    (= mode (inp/radio-mode-for (:type d) :radio2)))))
+    (draw-button (:x ok) (:y ok) (:w ok) (:h ok)
+                 "OK (Enter)" 180 230 180 80 160 80)
+    (draw-button (:x cancel) (:y cancel) (:w cancel) (:h cancel)
+                 "Cancel (Esc)" 230 180 180 160 80 80)))
 
 (defn- draw-dialog [state icons]
   (when-let [d (:dialog state)]
@@ -89,17 +114,41 @@
         (q/fill 0)
         (q/text-size lay/title-size)
         (q/text title text-x (+ y lay/title-size 8))
-        (q/fill 0)
-        (q/text-size lay/value-size)
         (if (= :credit-check (:mode d))
-          (do
+          (let [text-w (- (+ x w) text-x 8)
+                btn-y (+ y h -20 (- lay/title-size) -8)
+                btn-h lay/title-size]
+            (q/fill 0)
+            (q/text-size lay/value-size)
             (q/text-leading (* lay/value-size 1.3))
-            (q/text (str (:message d)) text-x (+ y (* lay/value-size 3) 8)
-                    (- (+ x w) text-x 8) (- h 60)))
-          (q/text (str "Amount: " (:input d)) text-x (+ y (* lay/value-size 3) 8)))
-        (q/text-size lay/small-size)
-        (q/fill 100)
-        (q/text (dialog-help d) text-x (+ y (* lay/value-size 5) 8))))))
+            (q/text (str (:message d)) text-x (+ y (* lay/title-size 2) 4)
+                    text-w (- btn-y y (- (* lay/title-size 2)) 8))
+            (q/text-size lay/label-size)
+            ;; Yes button — green tint
+            (q/fill 180 230 180)
+            (q/stroke 80 160 80)
+            (q/rect (+ x 8) btn-y 100 btn-h 3)
+            (q/fill 0) (q/no-stroke)
+            (q/text "Yes (y)" (+ x 14) (+ btn-y lay/label-size -2))
+            ;; No button — red tint
+            (q/fill 230 180 180)
+            (q/stroke 160 80 80)
+            (q/rect (+ x 120) btn-y 100 btn-h 3)
+            (q/fill 0) (q/no-stroke)
+            (q/text "No (n)" (+ x 126) (+ btn-y lay/label-size -2)))
+          (let [amount-y (+ y (* lay/value-size 3) 8)
+                ib (inp/dialog-input-bounds)]
+            (q/fill 0)
+            (q/text-size lay/value-size)
+            (q/text "Amount:" text-x amount-y)
+            (q/fill 255 255 255)
+            (q/stroke 150 150 150)
+            (q/stroke-weight 1)
+            (q/rect (:x ib) (:y ib) (:w ib) (:h ib) 3)
+            (q/fill 0)
+            (q/no-stroke)
+            (q/text (str (:input d)) (+ (:x ib) 4) amount-y)
+            (draw-dialog-buttons d)))))))
 
 (defn- fmt-offer [offer players]
   (let [name (get-in players [(:who offer) :name] "?")
@@ -290,7 +339,7 @@
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
   (if (= :difficulty screen)
     (su/select-difficulty app (su/difficulty-for-click x y))
-    (let [new-state (inp/handle-mouse state x y)]
+    (let [new-state (inp/handle-mouse state x y rng)]
       (cond
         (:run-clicked new-state)
         (assoc app :state

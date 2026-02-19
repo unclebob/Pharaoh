@@ -69,19 +69,23 @@
         fee (:fee d)
         amt (:borrow-amt d)
         total-amt (+ amt fee)
-        state (-> state (update :gold - fee))
+        old-limit (:credit-limit state)
         state (ln/credit-check rng state)
         new-limit (:credit-limit state)]
     (if (<= (+ (:loan state) total-amt) new-limit)
+      ;; C code: loan += amt; gold += amt (fee financed into loan)
       (let [int-rate (+ (:interest state) (:int-addition state))
             m (format (msg/pick rng msg/loan-approval-messages) total-amt int-rate)]
         (-> state
             (update :loan + total-amt)
-            (update :gold + amt)
+            (update :gold + total-amt)
             (dissoc :dialog)
             (assoc :message {:text m :face (:banker state)})))
+      ;; C code: creditLimit = oldCreditLimit; gold = max(0, gold-cost)
       (let [m (msg/pick rng msg/loan-denial-messages)]
         (-> state
+            (assoc :credit-limit old-limit)
+            (update :gold #(max 0.0 (- % fee)))
             (dissoc :dialog)
             (assoc :message {:text m :face (:banker state)}))))))
 

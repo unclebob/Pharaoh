@@ -172,17 +172,34 @@ and **face message dialogs** (neighbor visits, idle messages, dunning notices).
 
 Action dialogs appear as a rounded-corner rectangle spanning grid cells
 (2, 8) through (7, 12) — 6 columns wide by 5 rows tall. Each dialog has
-an icon image on the left, a title line, an amount input field, and a
-help line showing available keystrokes.
+an icon image on the left, a title line, an amount input field, and
+clickable radio buttons (for mode-selecting dialogs) plus OK/Cancel
+action buttons at the bottom.
+
+**Mode-selecting dialogs** (Buy-Sell, Loan, Overseer):
 
 ```
 +-----------------------------------------------------------+
 |                                                           |
 |  +--------+  buy-sell wheat (w) [buy]                     |
 |  |        |                                               |
-|  | [icon] |  Amount: 500                                  |
+|  | [icon] |  Amount: [________500________]                |
 |  |        |                                               |
-|  +--------+  b=buy s=sell  Enter=ok  Esc=cancel           |
+|  +--------+  (o) Buy (b)  ( ) Sell (s)  [OK] [Cancel]    |
+|                                                           |
++-----------------------------------------------------------+
+```
+
+**Simple dialogs** (Feed, Plant, Spread, Pyramid):
+
+```
++-----------------------------------------------------------+
+|                                                           |
+|  +--------+  feed slaves (S)                              |
+|  |        |                                               |
+|  | [icon] |  Amount: [________3.5________]                |
+|  |        |                                               |
+|  +--------+  [OK (Enter)]  [Cancel (Esc)]                 |
 |                                                           |
 +-----------------------------------------------------------+
 ```
@@ -195,9 +212,14 @@ help line showing available keystrokes.
   It includes the dialog type, commodity name (if applicable), keyboard
   shortcut in parentheses, and current mode in brackets.
 - The amount input field appears below the title at approximately 3x the
-  value font size from the top.
-- The help line appears at approximately 5x the value font size from the
-  top, in gray, using the small font size.
+  value font size from the top. The input value is displayed inside a
+  bordered text edit box (white fill, gray stroke, corner radius 3)
+  positioned after the "Amount:" label with ~4px left padding.
+- Radio buttons and action buttons appear at `btn-y = y + h - 20 -
+  title-size - 8`, height = `title-size`. Mode-selecting dialogs show
+  two radios (x+8 w110, x+126 w110) then OK (x+264 w110) and Cancel
+  (x+382 w120). Simple dialogs show OK (x+8 w120) and Cancel (x+136
+  w120).
 - The background is light blue-white (RGB 245, 245, 255) with a gray
   stroke (RGB 100) at weight 2, corner radius 5.
 
@@ -229,17 +251,22 @@ help line showing available keystrokes.
 The pattern is: `{type}` + ` {commodity}` (if applicable) + ` ({shortcut})`
 (if applicable) + ` [{mode}]` (if mode selected).
 
-**Help text by dialog type:**
+**Controls by dialog type:**
 
-| Dialog Type | Help Text |
-|-------------|-----------|
-| Buy/Sell | `b=buy s=sell  Enter=ok  Esc=cancel` |
-| Loan | `b=borrow r=repay  Enter=ok  Esc=cancel` |
-| Overseer | `h=hire f=fire  Enter=ok  Esc=cancel` |
-| Feed | `Enter amount, Enter=ok  Esc=cancel` |
-| Plant | `Enter acres, Enter=ok  Esc=cancel` |
-| Spread | `Enter tons, Enter=ok  Esc=cancel` |
-| Pyramid | `Enter stones, Enter=ok  Esc=cancel` |
+| Dialog Type | Radio 1 | Radio 2 | Buttons |
+|-------------|---------|---------|---------|
+| Buy/Sell | `Buy (b)` | `Sell (s)` | OK (green), Cancel (red) |
+| Loan | `Borrow (b)` | `Repay (r)` | OK (green), Cancel (red) |
+| Overseer | `Hire (h)` | `Fire (f)` | OK (green), Cancel (red) |
+| Feed | — | — | OK (green), Cancel (red) |
+| Plant | — | — | OK (green), Cancel (red) |
+| Spread | — | — | OK (green), Cancel (red) |
+| Pyramid | — | — | OK (green), Cancel (red) |
+
+Radio buttons use filled circle (80, 80, 160) for selected, hollow
+circle (160, 160, 160) for unselected. Clicking a radio sets the mode.
+OK button: fill (180, 230, 180), stroke (80, 160, 80).
+Cancel button: fill (230, 180, 180), stroke (160, 80, 80).
 
 ### Face Message Dialog
 

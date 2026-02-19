@@ -4,6 +4,17 @@
             [pharaoh.simulation :as sim]
             [pharaoh.random :as r]))
 
+(defn dialog-input-bounds []
+  (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
+        icon-size (int (* h 0.4))
+        text-x (+ x icon-size 16)
+        amount-y (+ y (* lay/value-size 3) 8)
+        box-x (+ text-x 68)
+        box-y (- amount-y lay/value-size 2)
+        box-w (- (+ x w) box-x 12)
+        box-h (+ lay/value-size 8)]
+    {:x box-x :y box-y :w box-w :h box-h}))
+
 (defn- open-trade [state commodity]
   (dlg/open-dialog state :buy-sell {:commodity commodity}))
 
@@ -164,10 +175,63 @@
         state))
     state))
 
-(defn handle-mouse [state mx my]
+(def ^:private mode-dialog-types #{:buy-sell :loan :overseer})
+
+(defn dialog-button-bounds [dtype]
+  (let [{:keys [x y h]} (lay/cell-rect-span 2 8 6 5)
+        btn-y (+ y h -20 (- lay/title-size) -8)]
+    (if (mode-dialog-types dtype)
+      {:radio1 {:x (+ x 8) :y btn-y :w 110 :h lay/title-size}
+       :radio2 {:x (+ x 126) :y btn-y :w 110 :h lay/title-size}
+       :ok     {:x (+ x 264) :y btn-y :w 110 :h lay/title-size}
+       :cancel {:x (+ x 382) :y btn-y :w 120 :h lay/title-size}}
+      {:ok     {:x (+ x 8) :y btn-y :w 120 :h lay/title-size}
+       :cancel {:x (+ x 136) :y btn-y :w 120 :h lay/title-size}})))
+
+(defn radio-mode-for [dtype which]
+  (case [dtype which]
+    [:buy-sell :radio1] :buy    [:buy-sell :radio2] :sell
+    [:loan :radio1]     :borrow [:loan :radio2]     :repay
+    [:overseer :radio1] :hire   [:overseer :radio2]  :fire
+    nil))
+
+(defn handle-dialog-click [state mx my rng]
+  (let [dtype (get-in state [:dialog :type])
+        bounds (dialog-button-bounds dtype)
+        hit (some (fn [[k rect]] (when (in-rect? mx my rect) k))
+                  bounds)]
+    (case hit
+      :radio1 (dlg/set-dialog-mode state (radio-mode-for dtype :radio1))
+      :radio2 (dlg/set-dialog-mode state (radio-mode-for dtype :radio2))
+      :ok     (dlg/execute-dialog rng (dissoc state :message))
+      :cancel (dlg/close-dialog state)
+      state)))
+
+(defn- credit-check-button-bounds []
+  (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
+        btn-y (+ y h -20 (- lay/title-size) -8)]
+    {:yes {:x (+ x 8) :y btn-y :w 100 :h lay/title-size}
+     :no  {:x (+ x 120) :y btn-y :w 100 :h lay/title-size}}))
+
+(defn- handle-credit-check-click [rng state mx my]
+  (let [{:keys [yes no]} (credit-check-button-bounds)]
+    (cond
+      (in-rect? mx my yes) (dlg/accept-credit-check rng state)
+      (in-rect? mx my no)  (dlg/reject-credit-check state)
+      :else state)))
+
+(defn- standard-dialog-open? [state]
+  (and (:dialog state)
+       (not= :contracts (get-in state [:dialog :type]))
+       (not (credit-check-mode? state))))
+
+(defn handle-mouse [state mx my & [rng]]
   (let [col (int (/ (- mx lay/pad) lay/cell-w))
         row (int (/ (- my lay/pad) lay/cell-h))]
     (cond
+      (credit-check-mode? state)
+      (handle-credit-check-click rng state mx my)
+
       (and (= :contracts (get-in state [:dialog :type]))
            (= :confirming (get-in state [:dialog :mode])))
       (handle-confirm-click state mx my)
@@ -175,6 +239,9 @@
       (and (= :contracts (get-in state [:dialog :type]))
            (= :browsing (get-in state [:dialog :mode])))
       (handle-contract-click state my)
+
+      (standard-dialog-open? state)
+      (handle-dialog-click state mx my rng)
 
       ;; RUN button (cols 8-9, row 23)
       (and (<= 8 col 9) (= row 23))

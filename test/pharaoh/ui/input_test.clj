@@ -686,6 +686,54 @@
         result (inp/handle-mouse state mx my)]
     (is (= :confirming (get-in result [:dialog :mode])))))
 
+;; ---- credit-check button clicks ----
+
+(defn- credit-check-button-y []
+  (let [{:keys [y h]} (lay/cell-rect-span 2 8 6 5)
+        btn-y (+ y h -20 (- lay/title-size) -8)]
+    (+ btn-y (/ lay/title-size 2))))
+
+(defn- credit-check-yes-x []
+  (let [{:keys [x]} (lay/cell-rect-span 2 8 6 5)]
+    (+ x 8 50)))
+
+(defn- credit-check-no-x []
+  (let [{:keys [x]} (lay/cell-rect-span 2 8 6 5)]
+    (+ x 120 50)))
+
+(defn- credit-check-state []
+  (-> (st/initial-state)
+      (assoc :credit-limit 100.0 :loan 0.0
+             :gold 50000.0 :credit-rating 0.8
+             :credit-lower 500000.0
+             :wheat 1000.0 :slaves 50.0 :oxen 20.0 :horses 10.0
+             :sl-health 0.8 :ox-health 0.9 :hs-health 0.7
+             :ln-fallow 100.0 :manure 200.0
+             :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                      :horses 500.0 :oxen 300.0 :land 5000.0})
+      (dlg/open-dialog :loan)
+      (assoc-in [:dialog :mode] :credit-check)
+      (assoc-in [:dialog :fee] 100.0)
+      (assoc-in [:dialog :borrow-amt] 1000.0)))
+
+(deftest click-credit-check-yes-accepts
+  (let [rng (r/make-rng 42)
+        state (credit-check-state)
+        result (inp/handle-mouse state (credit-check-yes-x) (credit-check-button-y) rng)]
+    (is (nil? (:dialog result)))
+    (is (map? (:message result)))))
+
+(deftest click-credit-check-no-rejects
+  (let [state (credit-check-state)
+        result (inp/handle-mouse state (credit-check-no-x) (credit-check-button-y))]
+    (is (some? (:dialog result)))
+    (is (nil? (get-in result [:dialog :mode])))))
+
+(deftest click-outside-credit-check-buttons-does-nothing
+  (let [state (credit-check-state)
+        result (inp/handle-mouse state (+ (credit-check-no-x) 300) (credit-check-button-y))]
+    (is (= :credit-check (get-in result [:dialog :mode])))))
+
 (deftest dismiss-message-no-queue
   (let [rng (r/make-rng 42)
         state (assoc (st/initial-state)
@@ -694,3 +742,179 @@
         result (inp/handle-key rng state \space)]
     ;; No more queued messages, message should be nil
     (is (nil? (:message result)))))
+
+;; ---- dialog-button-bounds ----
+
+(defn- dialog-rect []
+  (lay/cell-rect-span 2 8 6 5))
+
+(defn- expected-btn-y []
+  (let [{:keys [y h]} (dialog-rect)]
+    (+ y h -20 (- lay/title-size) -8)))
+
+(deftest dialog-button-bounds-mode-dialog-has-radios-and-buttons
+  (let [bounds (inp/dialog-button-bounds :buy-sell)]
+    (is (contains? bounds :radio1))
+    (is (contains? bounds :radio2))
+    (is (contains? bounds :ok))
+    (is (contains? bounds :cancel))
+    (let [{:keys [x]} (dialog-rect)
+          btn-y (expected-btn-y)]
+      (is (= {:x (+ x 8) :y btn-y :w 110 :h lay/title-size} (:radio1 bounds)))
+      (is (= {:x (+ x 126) :y btn-y :w 110 :h lay/title-size} (:radio2 bounds)))
+      (is (= {:x (+ x 264) :y btn-y :w 110 :h lay/title-size} (:ok bounds)))
+      (is (= {:x (+ x 382) :y btn-y :w 120 :h lay/title-size} (:cancel bounds))))))
+
+(deftest dialog-button-bounds-simple-dialog-has-only-buttons
+  (let [bounds (inp/dialog-button-bounds :feed)]
+    (is (nil? (:radio1 bounds)))
+    (is (nil? (:radio2 bounds)))
+    (is (contains? bounds :ok))
+    (is (contains? bounds :cancel))
+    (let [{:keys [x]} (dialog-rect)
+          btn-y (expected-btn-y)]
+      (is (= {:x (+ x 8) :y btn-y :w 120 :h lay/title-size} (:ok bounds)))
+      (is (= {:x (+ x 136) :y btn-y :w 120 :h lay/title-size} (:cancel bounds))))))
+
+(deftest dialog-button-bounds-loan-has-radios
+  (let [bounds (inp/dialog-button-bounds :loan)]
+    (is (contains? bounds :radio1))
+    (is (contains? bounds :radio2))))
+
+(deftest dialog-button-bounds-overseer-has-radios
+  (let [bounds (inp/dialog-button-bounds :overseer)]
+    (is (contains? bounds :radio1))
+    (is (contains? bounds :radio2))))
+
+;; ---- handle-dialog-click ----
+
+(defn- btn-center [{:keys [x y w h]}]
+  [(+ x (/ w 2)) (+ y (/ h 2))])
+
+(deftest click-radio1-in-buy-sell-sets-buy-mode
+  (let [state (dlg/open-dialog (st/initial-state) :buy-sell {:commodity :wheat})
+        bounds (inp/dialog-button-bounds :buy-sell)
+        [mx my] (btn-center (:radio1 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :buy (get-in result [:dialog :mode])))))
+
+(deftest click-radio2-in-buy-sell-sets-sell-mode
+  (let [state (dlg/open-dialog (st/initial-state) :buy-sell {:commodity :wheat})
+        bounds (inp/dialog-button-bounds :buy-sell)
+        [mx my] (btn-center (:radio2 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :sell (get-in result [:dialog :mode])))))
+
+(deftest click-radio1-in-loan-sets-borrow-mode
+  (let [state (dlg/open-dialog (st/initial-state) :loan)
+        bounds (inp/dialog-button-bounds :loan)
+        [mx my] (btn-center (:radio1 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :borrow (get-in result [:dialog :mode])))))
+
+(deftest click-radio2-in-loan-sets-repay-mode
+  (let [state (dlg/open-dialog (st/initial-state) :loan)
+        bounds (inp/dialog-button-bounds :loan)
+        [mx my] (btn-center (:radio2 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :repay (get-in result [:dialog :mode])))))
+
+(deftest click-radio1-in-overseer-sets-hire-mode
+  (let [state (dlg/open-dialog (st/initial-state) :overseer)
+        bounds (inp/dialog-button-bounds :overseer)
+        [mx my] (btn-center (:radio1 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :hire (get-in result [:dialog :mode])))))
+
+(deftest click-radio2-in-overseer-sets-fire-mode
+  (let [state (dlg/open-dialog (st/initial-state) :overseer)
+        bounds (inp/dialog-button-bounds :overseer)
+        [mx my] (btn-center (:radio2 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :fire (get-in result [:dialog :mode])))))
+
+(deftest click-ok-in-buy-sell-executes-dialog
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :gold 50000.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :buy)
+                  (assoc-in [:dialog :input] "100"))
+        bounds (inp/dialog-button-bounds :buy-sell)
+        [mx my] (btn-center (:ok bounds))
+        result (inp/handle-dialog-click state mx my rng)]
+    (is (nil? (:dialog result)))
+    (is (> (:wheat result) 0.0))))
+
+(deftest click-cancel-closes-dialog
+  (let [state (dlg/open-dialog (st/initial-state) :buy-sell {:commodity :wheat})
+        bounds (inp/dialog-button-bounds :buy-sell)
+        [mx my] (btn-center (:cancel bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (nil? (:dialog result)))))
+
+(deftest click-ok-in-feed-executes-dialog
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :feed {:commodity :slaves})
+                  (assoc-in [:dialog :input] "3.5"))
+        bounds (inp/dialog-button-bounds :feed)
+        [mx my] (btn-center (:ok bounds))
+        result (inp/handle-dialog-click state mx my rng)]
+    (is (nil? (:dialog result)))
+    (is (== 3.5 (:sl-feed-rt result)))))
+
+(deftest click-outside-dialog-buttons-returns-state-unchanged
+  (let [state (dlg/open-dialog (st/initial-state) :buy-sell {:commodity :wheat})
+        result (inp/handle-dialog-click state 0 0 nil)]
+    (is (= state result))))
+
+;; ---- handle-mouse routes to handle-dialog-click ----
+
+(deftest mouse-click-on-ok-in-open-dialog-executes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :plant)
+                  (assoc-in [:dialog :input] "50"))
+        bounds (inp/dialog-button-bounds :plant)
+        [mx my] (btn-center (:ok bounds))
+        result (inp/handle-mouse state mx my rng)]
+    (is (nil? (:dialog result)))
+    (is (== 50.0 (:ln-to-sew result)))))
+
+(deftest mouse-click-cancel-in-open-dialog-closes
+  (let [state (dlg/open-dialog (st/initial-state) :spread)
+        bounds (inp/dialog-button-bounds :spread)
+        [mx my] (btn-center (:cancel bounds))
+        result (inp/handle-mouse state mx my)]
+    (is (nil? (:dialog result)))))
+
+;; ---- dialog-input-bounds ----
+
+(deftest dialog-input-bounds-returns-expected-rect
+  (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
+        icon-size (int (* h 0.4))
+        text-x (+ x icon-size 16)
+        amount-y (+ y (* lay/value-size 3) 8)
+        expected-x (+ text-x 68)
+        expected-y (- amount-y lay/value-size 2)
+        expected-w (- (+ x w) expected-x 12)
+        expected-h (+ lay/value-size 8)
+        bounds (inp/dialog-input-bounds)]
+    (is (= expected-x (:x bounds)))
+    (is (= expected-y (:y bounds)))
+    (is (= expected-w (:w bounds)))
+    (is (= expected-h (:h bounds)))))
+
+(deftest dialog-input-bounds-box-starts-after-label
+  (let [{:keys [x h]} (lay/cell-rect-span 2 8 6 5)
+        icon-size (int (* h 0.4))
+        text-x (+ x icon-size 16)
+        bounds (inp/dialog-input-bounds)]
+    (is (> (:x bounds) text-x))))
+
+(deftest dialog-input-bounds-box-extends-to-near-right-edge
+  (let [{:keys [x w]} (lay/cell-rect-span 2 8 6 5)
+        right-edge (+ x w)
+        bounds (inp/dialog-input-bounds)]
+    (is (= 12 (- right-edge (+ (:x bounds) (:w bounds)))))))

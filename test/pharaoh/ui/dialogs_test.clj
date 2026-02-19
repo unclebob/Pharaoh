@@ -233,10 +233,10 @@
         result (dlg/accept-credit-check rng state)]
     ;; Dialog should be closed
     (is (nil? (:dialog result)))
-    ;; Loan should include the borrow amount + fee (C code: amt += cost)
+    ;; Loan includes borrow + fee (C code: amt += cost; loan += amt)
     (is (== 1100.0 (:loan result)))
-    ;; Gold should increase by borrow-amt (1000) minus fee (100)
-    (is (== (+ 50000.0 1000.0 (- 100.0)) (:gold result)))
+    ;; Gold increases by total-amt (C code: gold += amt, fee is financed)
+    (is (== (+ 50000.0 1100.0) (:gold result)))
     ;; Face message shows approval
     (is (map? (:message result)))
     (is (string? (:text (:message result))))))
@@ -259,13 +259,32 @@
         result (dlg/accept-credit-check rng state)]
     ;; Dialog should be closed
     (is (nil? (:dialog result)))
-    ;; Fee is deducted from gold
-    (is (== (- 50000.0 100.0) (:gold result)))
+    ;; Fee deducted, clamped to 0 (C code: gold = max(0, gold-cost))
+    (is (== (max 0.0 (- 50000.0 100.0)) (:gold result)))
     ;; Loan should NOT include the borrow amount
     (is (== 0.0 (:loan result)))
     ;; Face message shows denial
     (is (map? (:message result)))
     (is (string? (:text (:message result))))))
+
+(deftest accept-credit-check-denial-clamps-gold-to-zero
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :credit-limit 100.0 :loan 0.0
+                         :gold 50.0 :credit-rating 0.01
+                         :credit-lower 0.0
+                         :wheat 0.0 :slaves 0.0 :oxen 0.0 :horses 0.0
+                         :sl-health 0.0 :ox-health 0.0 :hs-health 0.0
+                         :ln-fallow 0.0 :manure 0.0
+                         :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
+                                  :horses 500.0 :oxen 300.0 :land 5000.0})
+                  (dlg/open-dialog :loan)
+                  (assoc-in [:dialog :mode] :credit-check)
+                  (assoc-in [:dialog :fee] 200.0)
+                  (assoc-in [:dialog :borrow-amt] 100000.0))
+        result (dlg/accept-credit-check rng state)]
+    ;; Gold clamped to 0, not negative (C code: gold = max(0, gold-cost))
+    (is (== 0.0 (:gold result)))))
 
 (deftest reject-credit-check-returns-to-input
   (let [state (-> (st/initial-state)
