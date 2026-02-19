@@ -92,7 +92,8 @@
       :world-growth 0.10
       :prices (assoc (:prices state) :land 5000.0 :wheat 8.0 :slaves 800.0))
     "Hard"
-    (assoc state :py-base 1154.7)
+    (assoc state :py-base 1154.7
+      :credit-limit 5e4 :credit-lower 5e4)
     state))
 
 (defn total-land [state]

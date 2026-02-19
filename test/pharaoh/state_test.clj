@@ -63,7 +63,9 @@
 
 (deftest set-difficulty-hard
   (let [s (st/set-difficulty (st/initial-state) "Hard")]
-    (is (== 1154.7 (:py-base s)))))
+    (is (== 1154.7 (:py-base s)))
+    (is (== 5e4 (:credit-limit s)))
+    (is (== 5e4 (:credit-lower s)))))
 
 (deftest set-difficulty-invalid-returns-unchanged
   (let [s (st/initial-state)
