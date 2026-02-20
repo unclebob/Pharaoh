@@ -71,11 +71,17 @@
                   (dlg/open-contracts-dialog))]
     (is (false? (show-face-message? state)))))
 
-(deftest face-message-shown-when-non-contracts-dialog-open
+(deftest face-message-hidden-when-any-dialog-open
   (let [state (-> (st/initial-state)
                   (assoc :message {:text "Hi" :face 0})
                   (dlg/open-dialog :buy-sell {:commodity :wheat}))]
-    (is (true? (show-face-message? state)))))
+    (is (false? (show-face-message? state)))))
+
+(deftest face-message-hidden-when-file-dialog-open
+  (let [state (-> (st/initial-state)
+                  (assoc :message {:text "Hi" :face 0})
+                  (dlg/open-dialog :save-file))]
+    (is (false? (show-face-message? state)))))
 
 (deftest face-message-hidden-when-no-message
   (is (false? (show-face-message? (st/initial-state)))))

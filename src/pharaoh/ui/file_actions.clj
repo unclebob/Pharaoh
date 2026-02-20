@@ -23,6 +23,13 @@
     (-> (st/initial-state)
         (assoc :dirty false :save-path nil))))
 
+(defn do-load-file [state filename]
+  (let [path (ps/save-path filename)
+        loaded (ps/load-game path)]
+    (if loaded
+      (assoc state :dirty false :save-path path :loaded-state loaded)
+      (assoc state :message (str "Could not load: " filename)))))
+
 (defn do-quit [state]
   (if (:dirty state)
     (dlg/open-dialog state :confirm-save {:next-action :quit})

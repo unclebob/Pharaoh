@@ -121,11 +121,21 @@
 (defn- pick-error [rng cat]
   (msg/pick rng (get msg/input-error-messages cat)))
 
+(defn- bare-filename? [path]
+  (not (or (str/includes? path "/") (str/includes? path "\\"))))
+
+(defn- resolve-save-path [path]
+  (if (bare-filename? path)
+    (do (ps/ensure-saves-dir)
+        (ps/save-path path))
+    path))
+
 (defn- execute-save-file [state path]
   (if (empty? path)
     (assoc state :message "No filename entered.")
-    (do (ps/save-game (dissoc state :dialog :dirty :save-path) path)
-        (-> state (dissoc :dialog) (assoc :dirty false :save-path path)))))
+    (let [full-path (resolve-save-path path)]
+      (ps/save-game (dissoc state :dialog :dirty :save-path) full-path)
+      (-> state (dissoc :dialog) (assoc :dirty false :save-path full-path)))))
 
 (defn- execute-load-file [state path]
   (let [loaded (when (seq path) (ps/load-game path))]

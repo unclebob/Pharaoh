@@ -126,13 +126,6 @@
       (:save-file :load-file) (handle-file-dialog-key rng state key-char)
       (handle-generic-dialog-key rng state key-char))))
 
-(defn handle-ctrl-key [state key-char]
-  (case key-char
-    \s (fa/do-save state)
-    \o (fa/do-open state)
-    \n (fa/do-new-game state)
-    nil))
-
 (defn handle-key [rng state key-char & [key-kw]]
   (cond
     (:dialog state)

@@ -10,19 +10,21 @@
 
 ;; Computed from window size
 (def pad 16)
+(def menu-bar-h 22)
+(def top-pad (+ pad menu-bar-h))
 (def win-w default-w)
 (def win-h default-h)
 (def cell-w (/ (- win-w (* 2 pad)) x-cells))
-(def cell-h (/ (- win-h (* 2 pad)) y-cells))
+(def cell-h (/ (- win-h pad top-pad) y-cells))
 
 (defn cell-rect [col row]
   {:x (+ (* col cell-w) pad)
-   :y (+ (* row cell-h) pad)
+   :y (+ (* row cell-h) top-pad)
    :w cell-w :h cell-h})
 
 (defn cell-rect-span [col row cols rows]
   {:x (+ (* col cell-w) pad)
-   :y (+ (* row cell-h) pad)
+   :y (+ (* row cell-h) top-pad)
    :w (* cols cell-w) :h (* rows cell-h)})
 
 ;; Section positions matching spec wireframe [col row width-cols height-rows]

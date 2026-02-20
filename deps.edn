@@ -8,4 +8,9 @@
                        :git/sha "dfb30dd"}}
          :main-opts ["-m" "cognitect.test-runner"]
          :exec-fn cognitect.test-runner.api/test}
-  :run {:main-opts ["-m" "pharaoh.core"]}}}
+  :run {:main-opts ["-m" "pharaoh.core"]}
+  :coverage {:extra-paths ["test"]
+             :extra-deps {cloverage/cloverage {:mvn/version "1.2.4"}}
+             :main-opts ["-m" "cloverage.coverage"
+                         "--test-ns-path" "test"
+                         "--src-ns-path" "src"]}}}

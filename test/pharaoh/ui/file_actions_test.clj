@@ -1,5 +1,6 @@
 (ns pharaoh.ui.file-actions-test
   (:require [clojure.test :refer :all]
+            [pharaoh.persistence :as ps]
             [pharaoh.ui.file-actions :as fa]
             [pharaoh.state :as st]))
 
@@ -56,3 +57,22 @@
   (let [state (assoc (st/initial-state) :dirty false)
         result (fa/do-quit state)]
     (is (true? (:quit-clicked result)))))
+
+(deftest do-load-file-loads-existing-save
+  (let [dir (str "/tmp/pharaoh-load-test-" (System/currentTimeMillis) "/")
+        state (assoc (st/initial-state) :gold 8888.0)]
+    (.mkdirs (java.io.File. dir))
+    (with-redefs [ps/saves-dir dir]
+      (ps/save-game state (ps/save-path "game1.edn"))
+      (let [result (fa/do-load-file (st/initial-state) "game1.edn")]
+        (is (= 8888.0 (:gold (:loaded-state result))))
+        (is (false? (:dirty result)))
+        (is (= (str dir "game1.edn") (:save-path result)))))
+    ;; cleanup
+    (doseq [f (.listFiles (java.io.File. dir))] (.delete f))
+    (.delete (java.io.File. dir))))
+
+(deftest do-load-file-missing-file-sets-error
+  (with-redefs [ps/saves-dir "/tmp/pharaoh-nonexistent/"]
+    (let [result (fa/do-load-file (st/initial-state) "nope.edn")]
+      (is (string? (:message result))))))

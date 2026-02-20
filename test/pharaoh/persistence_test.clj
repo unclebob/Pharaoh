@@ -52,6 +52,43 @@
       (is (= 200.0 (:slaves loaded)))
       (is (= 50000.0 (:py-stones loaded))))))
 
+(deftest saves-dir-is-saves-slash
+  (is (= "saves/" p/saves-dir)))
+
+(deftest save-path-prepends-saves-dir
+  (is (= "saves/test1.edn" (p/save-path "test1.edn")))
+  (is (= "saves/foo" (p/save-path "foo"))))
+
+(deftest ensure-saves-dir-creates-directory
+  (let [dir (java.io.File/createTempFile "pharaoh-dir-test" "")]
+    (.delete dir)
+    (let [d (str (.getAbsolutePath dir) "/saves/")]
+      (is (not (.exists (io/file d))))
+      (with-redefs [p/saves-dir d]
+        (p/ensure-saves-dir))
+      (is (.isDirectory (io/file d)))
+      ;; cleanup
+      (.delete (io/file d))
+      (.delete dir))))
+
+(deftest list-saves-returns-sorted-files
+  (let [dir (java.io.File/createTempFile "pharaoh-list-test" "")]
+    (.delete dir)
+    (let [d (str (.getAbsolutePath dir) "/")]
+      (.mkdirs (io/file d))
+      (spit (str d "beta") "{}")
+      (spit (str d "alpha") "{}")
+      (spit (str d "gamma") "nope")
+      (with-redefs [p/saves-dir d]
+        (is (= ["alpha" "beta" "gamma"] (p/list-saves))))
+      ;; cleanup
+      (doseq [f (.listFiles (io/file d))] (.delete f))
+      (.delete (io/file d)))))
+
+(deftest list-saves-returns-empty-when-no-dir
+  (with-redefs [p/saves-dir "/tmp/pharaoh-nonexistent-dir-xyz/"]
+    (is (= [] (p/list-saves)))))
+
 (deftest full-save-load-via-file-actions
   (let [state (-> (st/initial-state)
                   (assoc :gold 12345.0 :month 7 :year 5 :dirty true))

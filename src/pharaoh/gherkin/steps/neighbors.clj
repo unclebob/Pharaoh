@@ -6,6 +6,7 @@
             [pharaoh.random :as r]
             [pharaoh.state :as st]
             [pharaoh.ui.dialogs :as dlg]
+            [pharaoh.ui.input :as inp]
             [clojure.string :as str]))
 
 (defn steps []
@@ -19,7 +20,21 @@
    {:type :given :pattern #"the player has been inactive for .+ seconds"
     :handler (fn [w] w)}
    {:type :given :pattern #"the topic is \"(.+)\""
-    :handler (fn [w topic] (assoc w :advice-topic topic))}
+    :handler (fn [w topic]
+               (let [prereqs {"oxen feeding" {:oxen 5.0}
+                              "horse feeding" {:horses 5.0}
+                              "slave feeding" {:slaves 10.0}
+                              "overseers" {:overseers 2.0 :slaves 40.0}
+                              "stress" {:overseers 2.0}
+                              "fertilizer" {:ln-fallow 10.0}
+                              "slave health" {:slaves 10.0}
+                              "oxen health" {:oxen 5.0}
+                              "horse health" {:horses 5.0}
+                              "credit" {:loan 100.0}}
+                     reqs (get prereqs topic {})]
+                 (-> w
+                     (assoc :advice-topic topic)
+                     (update :state merge reqs))))}
    {:type :given :pattern #"a neighbor gives advice on a topic"
     :handler (fn [w] (assoc w :visiting :good-guy))}
    {:type :given :pattern #"any neighbor gives advice"
@@ -71,6 +86,62 @@
    {:type :given :pattern #"the credit rating is (.+)"
     :handler (fn [w v] (assoc-in w [:state :credit-rating] (to-double v)))}
 
+   ;; ===== set-men / choose-chat Given =====
+   {:type :when :pattern #"personalities are assigned from seed (\d+)"
+    :handler (fn [w seed]
+               (let [rng (r/make-rng (Integer/parseInt seed))
+                     men (nb/set-men rng)
+                     w (if (:state w) w (assoc w :state (st/initial-state)))]
+                 (assoc w :state (merge (:state w) men))))}
+   {:type :given :pattern #"personalities are set with seed (\d+)"
+    :handler (fn [w seed]
+               (let [rng (r/make-rng (Integer/parseInt seed))
+                     men (nb/set-men rng)
+                     w (if (:state w) w (assoc w :state (st/initial-state)))]
+                 (assoc w :state (merge (:state w) men))))}
+   {:type :given :pattern #"the state has slaves (\d+) with sl-health (.+)"
+    :handler (fn [w slaves health]
+               (-> w
+                   (assoc-in [:state :slaves] (to-double slaves))
+                   (assoc-in [:state :sl-health] (to-double health))))}
+   {:type :when :pattern #"choose-chat is called (\d+) times for the (.+)"
+    :handler (fn [w n role]
+               (let [s (:state w)
+                     man-key (case role
+                               "good guy" :good-guy
+                               "bad guy" :bad-guy
+                               "dumb guy" :dumb-guy
+                               "banker" :banker)
+                     man (get s man-key)
+                     results (for [seed (range (Integer/parseInt n))]
+                               (nb/choose-chat (r/make-rng seed) s man))]
+                 (assoc w :chat-results (vec results))))}
+   {:type :then :pattern #"the majority of slave-health advice is (.+)"
+    :handler (fn [w expected]
+               (let [kw (keyword expected)
+                     results (:chat-results w)
+                     sl-advice (filter #{:bad-sl-health :good-sl-health} results)
+                     target-count (count (filter #(= kw %) sl-advice))]
+                 (assert (seq sl-advice) "Expected some slave-health advice")
+                 (assert (> target-count (* (count sl-advice) 0.8))
+                         (str "Expected majority " expected " but got "
+                              target-count "/" (count sl-advice))))
+               w)}
+   {:type :then :pattern #"slave-health advice includes both good and bad"
+    :handler (fn [w]
+               (let [results (:chat-results w)
+                     sl-advice (filter #{:bad-sl-health :good-sl-health} results)
+                     bad-count (count (filter #(= :bad-sl-health %) sl-advice))
+                     good-count (count (filter #(= :good-sl-health %) sl-advice))]
+                 (assert (pos? bad-count) "Expected some bad advice from dumb guy")
+                 (assert (pos? good-count) "Expected some good advice from dumb guy"))
+               w)}
+   {:type :then :pattern #"every result is chat"
+    :handler (fn [w]
+               (doseq [r (:chat-results w)]
+                 (assert (= :chat r) (str "Expected :chat but got " r)))
+               w)}
+
    ;; ===== Neighbors When =====
    {:type :when :pattern #"he gives advice about (.+)"
     :handler (fn [w _] w)}
@@ -110,13 +181,35 @@
                  (assoc-in w [:state :message] {:text text :face face})))}
    {:type :when :pattern #"a neighbor gives advice"
     :handler (fn [w]
-               (let [w (ensure-rng w)]
-                 (assoc-in w [:state :message]
-                           {:text "Advice message" :face 1})))}
+               (let [w (ensure-rng w)
+                     topic-name (:advice-topic w)
+                     topic-map {"oxen feeding" :ox-feed
+                                "horse feeding" :hs-feed
+                                "slave feeding" :sl-feed
+                                "overseers" :overseers
+                                "stress" :stress
+                                "fertilizer" :fertilizer
+                                "slave health" :sl-health
+                                "oxen health" :ox-health
+                                "horse health" :hs-health
+                                "credit" :credit}
+                     topic-id (get topic-map topic-name)
+                     topic (first (filter #(= topic-id (:id %)) nb/advice-topics))
+                     quality (when topic ((:check topic) (:state w)))]
+                 (assoc w :advice-quality quality)))}
    {:type :when :pattern #"the player presses any key"
     :handler (fn [w]
                (let [w (ensure-rng w)]
                  (update w :state dissoc :message)))}
+
+   {:type :when :pattern #"the player dismisses the face message"
+    :handler (fn [w]
+               (let [w (ensure-rng w)
+                     new-state (inp/handle-key (:rng w) (:state w) \space)
+                     w (assoc w :state (dissoc new-state :reset-visit-timers))]
+                 (if (:reset-visit-timers new-state)
+                   (vis/reset-timers w (:now w))
+                   w)))}
 
    ;; ===== Visit Timer When =====
    {:type :when :pattern #"visits are checked"
@@ -160,7 +253,12 @@
    {:type :then :pattern #"there is a (\d+)% chance the advice meaning is inverted"
     :handler (fn [w _] w)}
    {:type :then :pattern #"the advice is skipped and generic chat is shown instead"
-    :handler (fn [w] w)}
+    :handler (fn [w]
+               (let [topic (first (filter #(= :ox-feed (:id %)) nb/advice-topics))
+                     quality ((:check topic) (:state w))]
+                 (assert (nil? quality)
+                         (str "Expected nil (skipped) but got " quality)))
+               w)}
    {:type :then :pattern #"he delivers generic chat messages"
     :handler (fn [w] w)}
    {:type :then :pattern #"the dunning timer is reset"
@@ -202,7 +300,11 @@
    {:type :then :pattern #"the bad message is selected from a separate pool of approximately (\d+)-(\d+) variants"
     :handler (fn [w _ _] w)}
    {:type :then :pattern #"the \"(.+)\" advice is selected"
-    :handler (fn [w _] w)}
+    :handler (fn [w quality]
+               (let [expected (keyword quality)]
+                 (assert (= expected (:advice-quality w))
+                         (str "Expected " expected " advice but got " (:advice-quality w))))
+               w)}
    {:type :then :pattern #"the chat may contain advice or be generic small talk"
     :handler (fn [w] w)}
    {:type :then :pattern #"the assembled message is spoken by a random neighbor"
@@ -396,8 +498,8 @@
                            (str/starts-with? condition "< ")
                            (- (to-double (subs condition 2)) 0.01)
                            (str/includes? condition " - ")
-                           (let [[lo _] (str/split condition #" - ")]
-                             (to-double lo))
+                           (let [[lo hi] (str/split condition #" - ")]
+                             (/ (+ (to-double lo) (to-double hi)) 2.0))
                            :else (to-double condition))]
                  (cond
                    (= metric "manure per acre")
@@ -415,5 +517,9 @@
                          (assoc-in [:state :slaves] slaves)
                          (assoc-in [:state :overseers] overseers)))
                    path
-                   (assoc-in w [:state (first path)] val)
+                   (let [w (assoc-in w [:state (first path)] val)]
+                     (if (= metric "slave feed rate")
+                       (assoc-in w [:state :sl-health]
+                                 (if (str/starts-with? condition ">") 0.9 0.5))
+                       w))
                    :else w)))}])

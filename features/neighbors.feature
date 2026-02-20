@@ -22,6 +22,11 @@ Feature: Neighbors
     And no two personalities share the same face
     And assignments are randomized each new game
 
+  Scenario: Personalities are assigned using set-men
+    When personalities are assigned from seed 42
+    Then four faces are assigned
+    And no two personalities share the same face
+
   # -----------------------------------------------------------
   # Advice System
   # -----------------------------------------------------------
@@ -56,6 +61,29 @@ Feature: Neighbors
   Scenario: 20% chance a chat is just small talk
     Given any neighbor visits
     Then there is a 20% chance the chat is generic regardless of game state
+
+  Scenario: Good guy choose-chat returns accurate advice
+    Given personalities are set with seed 42
+    And the state has slaves 10 with sl-health 0.4
+    When choose-chat is called 1000 times for the good guy
+    Then the majority of slave-health advice is bad-sl-health
+
+  Scenario: Bad guy choose-chat inverts advice
+    Given personalities are set with seed 42
+    And the state has slaves 10 with sl-health 0.4
+    When choose-chat is called 1000 times for the bad guy
+    Then the majority of slave-health advice is good-sl-health
+
+  Scenario: Dumb guy choose-chat gives mixed advice
+    Given personalities are set with seed 42
+    And the state has slaves 10 with sl-health 0.4
+    When choose-chat is called 2000 times for the dumb guy
+    Then slave-health advice includes both good and bad
+
+  Scenario: Banker choose-chat always returns chat
+    Given personalities are set with seed 42
+    When choose-chat is called 100 times for the banker
+    Then every result is chat
 
   # -----------------------------------------------------------
   # Advice Topics
@@ -252,6 +280,21 @@ Feature: Neighbors
     And the idle timer has expired
     When visits are checked
     Then the existing message is preserved
+
+  # -----------------------------------------------------------
+  # Timer Reset on Dismissal
+  # -----------------------------------------------------------
+
+  Scenario: Dismissing a face message resets all visit timers
+    Given the visit timers are initialized
+    And the idle timer has expired
+    And the chat timer has expired
+    And the dunning timer has expired
+    When visits are checked
+    And the player dismisses the face message
+    Then the idle timer is reset to the future
+    And the chat timer is reset to the future
+    And the dunning timer is reset to the future
 
   # -----------------------------------------------------------
   # Timer Interval Ranges

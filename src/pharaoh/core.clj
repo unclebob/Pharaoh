@@ -380,7 +380,7 @@
 
 (defn- show-face-message? [state]
   (and (map? (:message state))
-       (not= :contracts (get-in state [:dialog :type]))))
+       (nil? (:dialog state))))
 
 (defn- draw [{:keys [screen state faces icons logo] :as app}]
   (if (= :difficulty screen)
@@ -430,18 +430,18 @@
     (if (= (int raw-key) 27)
       (do (quit!) app)
       (su/select-difficulty app (su/difficulty-for-key raw-key)))
-    (let [mods (q/key-modifiers)
-          ctrl? (contains? mods :ctrl)
-          new-state (if (and ctrl? (not (:dialog (:state app))))
-                      (or (inp/handle-ctrl-key (:state app) raw-key)
-                          (inp/handle-key (:rng app) (:state app) raw-key key))
-                      (inp/handle-key (:rng app) (:state app) raw-key key))]
-      (apply-state-result app new-state))))
+    (if-let [result (menu/handle-menu-key app raw-key)]
+      result
+      (let [new-state (inp/handle-key (:rng app) (:state app) raw-key key)]
+        (apply-state-result app new-state)))))
 
 (defn- mouse-moved [{:keys [screen state] :as app} {:keys [x y]}]
   (if (= :difficulty screen)
     app
-    (assoc app :state (inp/handle-mouse-move state x y))))
+    (let [app (if (get-in app [:menu :open?])
+                (menu/update-hover app x y)
+                app)]
+      (assoc app :state (inp/handle-mouse-move state x y)))))
 
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
   (if (= :difficulty screen)
@@ -450,6 +450,17 @@
       ;; Menu bar click
       (and (<= y menu/menu-bar-h) (<= x 60))
       (menu/toggle-menu app)
+
+      ;; Submenu click (save file list)
+      (and (get-in app [:menu :submenu :open?])
+           (let [items (get-in app [:menu :submenu :items])]
+             (menu/submenu-item-hit items x y)))
+      (let [items (get-in app [:menu :submenu :items])
+            hit (menu/submenu-item-hit items x y)
+            new-state (if (= :browse hit)
+                        (fa/do-open state)
+                        (fa/do-load-file state hit))]
+        (apply-state-result (menu/close-menu app) new-state))
 
       ;; Menu dropdown item click
       (get-in app [:menu :open?])

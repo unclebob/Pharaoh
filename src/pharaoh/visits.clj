@@ -49,7 +49,7 @@
                                           (:credit-rating state)))))))))))
 
 (defn check-visits [{:keys [state] :as app} now]
-  (if (or (:message state) (:dialog state))
+  (if (or (:message state) (:dialog state) (get-in app [:menu :open?]))
     app
     (let [app (check-idle app now)]
       (if (get-in app [:state :message])

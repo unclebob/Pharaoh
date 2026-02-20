@@ -712,6 +712,44 @@
     (is (= path (:save-path result)))
     (is (.exists (File. path)))))
 
+(deftest execute-save-file-bare-name-prepends-saves-dir
+  (let [rng (r/make-rng 42)
+        dir (str "/tmp/pharaoh-saves-test-" (System/currentTimeMillis) "/")
+        state (-> (st/initial-state)
+                  (assoc :gold 7777.0 :dirty true)
+                  (dlg/open-dialog :save-file {:input "mygame"}))]
+    (with-redefs [ps/saves-dir dir]
+      (let [result (dlg/execute-dialog rng state)]
+        (is (nil? (:dialog result)))
+        (is (false? (:dirty result)))
+        (is (= (str dir "mygame") (:save-path result)))
+        (is (.exists (File. (str dir "mygame"))))
+        ;; cleanup
+        (doseq [f (.listFiles (File. dir))] (.delete f))
+        (.delete (File. dir))))))
+
+(deftest execute-save-file-bare-name-no-extension-added
+  (let [rng (r/make-rng 42)
+        dir (str "/tmp/pharaoh-ext-test-" (System/currentTimeMillis) "/")
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file {:input "test1"}))]
+    (with-redefs [ps/saves-dir dir]
+      (let [result (dlg/execute-dialog rng state)]
+        (is (= (str dir "test1") (:save-path result)))
+        ;; cleanup
+        (doseq [f (.listFiles (File. dir))] (.delete f))
+        (.delete (File. dir))))))
+
+(deftest execute-save-file-absolute-path-not-prepended
+  (let [path (str "/tmp/pharaoh-abs-test-" (System/currentTimeMillis) ".edn")
+        rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file {:input path}))]
+    (let [result (dlg/execute-dialog rng state)]
+      (is (= path (:save-path result)))
+      (is (.exists (File. path)))
+      (.delete (File. path)))))
+
 (deftest execute-save-file-empty-input-shows-error
   (let [rng (r/make-rng 42)
         state (-> (st/initial-state)

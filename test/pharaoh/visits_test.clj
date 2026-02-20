@@ -118,6 +118,13 @@
         result (v/check-visits app now)]
     (is (nil? (get-in result [:state :message])))))
 
+(deftest check-visits-skips-when-menu-open
+  (let [app (make-app :next-idle 0 :next-chat 0 :next-dunning 0)
+        app (assoc app :menu {:open? true})
+        now 5000
+        result (v/check-visits app now)]
+    (is (nil? (get-in result [:state :message])))))
+
 ;; --- reset-timers ---
 
 (deftest reset-timers-sets-all-future-timestamps
