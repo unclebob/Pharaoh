@@ -2181,97 +2181,103 @@ Borrow up to the credit limit immediately. Starting capital is zero and
 interest is unavoidable, so the loan must be put to work fast. Prioritize
 purchases in this order:
 
-1. **Land** -- Buy 50-100 acres. Land is the engine of the wheat economy, but
-   it also costs 100 gold/acre/month in upkeep, so don't over-buy early.
-2. **Slaves** -- Buy enough to work the land. Aim for roughly 10-20 slaves
-   per acre of planted land (see workload ratios below).
-3. **Oxen** -- Buy 1 ox per 2 slaves. This gives a ~1.25x work multiplier
-   from the oxen table. More oxen give diminishing returns.
-4. **Overseers** -- Hire a few right away. Without overseers, slaves have
-   low motivation (~0.3x output). One overseer per 20-30 slaves is a good
-   starting ratio.
-5. **Manure** -- Buy 2-4 tons per acre of land you plan to plant. This
-   pushes yield from 0.1x (unfertilized) to 0.45-0.72x.
-
-Delay purchasing horses until the economy is self-sustaining. Horses eat
-50-60 bushels/month each but don't contribute to farming. Their value is
-boosting overseer effectiveness once you have overseers mounted.
+1. **Slaves** -- Buy 100+. Slaves are the fundamental workforce. At health
+   1.0 with oxen, each slave produces ~38 man-hours/month of work.
+2. **Oxen** -- Buy 1 ox per 2 slaves. This gives a 3.0x work multiplier
+   from the oxen table — the single biggest force multiplier in the game.
+3. **Overseers** -- Hire immediately. Without overseers, slave motivation
+   is near zero and no work gets done. Aim for 1 per 15 slaves (motive ~0.63).
+   At 300 gold/month each they are expensive, but essential.
+4. **Horses** -- Buy 2 per overseer. This pushes overseer effectiveness to
+   ~0.99 (near maximum) and unlocks the full work output of your slaves.
+   Horses are cheap (100 gold each) but eat 50-60 bushels/month.
+5. **Land** -- Buy 50-100 acres. Land costs 100 gold/acre/month in upkeep.
+   In Easy mode, land is only 1,000 gold/acre.
+6. **Manure** -- Buy 3-5 tons per acre you plan to plant. At 5 tons/acre,
+   wheat yield is 200 bushels per bushel of seed — farming is extremely
+   productive and is the primary wealth engine.
 
 ### Feed Rates
 
 Feed rates are bushels of wheat per individual per month. The nourishment
 lookup tables have diminishing returns -- spending more wheat beyond the
-sweet spot wastes grain for negligible health gain. Recommended rates:
+sweet spot wastes grain for negligible health gain. Below a threshold,
+nourishment goes **negative** and health actively declines. Recommended rates:
 
 | Population | Range   | Sweet Spot | Notes |
 |------------|---------|------------|-------|
-| Slaves     | 0-20    | **12-14**  | Nourishment ~0.12-0.13. Below 8, health declines and slaves die faster than they breed. |
-| Oxen       | 0-120   | **70-80**  | Nourishment ~0.17. Below 50, oxen sicken and lose work efficiency. |
-| Horses     | 0-100   | **50-60**  | Nourishment ~0.18-0.21. Horses are hardier but expensive to feed. |
+| Slaves     | 0-10    | **8-10**   | Nourishment 0.12-0.18. Below feed 3, nourishment is negative and health drops. |
+| Oxen       | 0-100   | **70-80**  | Nourishment 0.09-0.10. Aging costs 0.05/mo, so net health gain +0.04-0.05. Below feed ~45, health declines. |
+| Horses     | 0-75    | **50-60**  | Nourishment 0.09-0.10. Aging costs 0.08/mo, so net health gain +0.01-0.02. Below feed ~40, health declines. |
 
-At these feed rates, health stabilizes above 0.7, where birth rates (~2.5%/mo)
-comfortably exceed death rates (~1%/mo) and the population grows naturally.
-Starving your workforce is a false economy -- replacing dead slaves costs far
-more than feeding live ones.
+At health 1.0, birth rates are very high (slaves ~14%/mo, livestock ~7%/mo)
+and death rates are minimal (slaves 0.2%/mo, livestock ~0.4-0.5%/mo).
+Populations grow rapidly. Starving your workforce is a false economy —
+replacing dead slaves costs far more than feeding live ones, and at low
+health the death spiral accelerates quickly (death rate reaches 100% at
+health 0).
 
 ### Key Ratios
 
 | Ratio | Target | Why |
 |-------|--------|-----|
-| Oxen per slave | **0.5** (1 ox per 2 slaves) | Work multiplier ~1.25x. Going to 1:1 gives ~1.65x but doubles oxen feed costs. |
-| Overseers per slave | **1 per 20-30** | Keeps positive motivation above 0.7x. Too few overseers → low output. Too many → wasted salary. |
-| Horses per overseer | **3** | Overseer effectiveness jumps to ~1.7x when mounted. This is the single biggest force multiplier once you have overseers. |
-| Manure per acre | **2-4 tons** | Yield jumps from 0.1x (bare) to 0.45x (2 tons) to 0.72x (4 tons). Beyond 6 tons the curve flattens to ~0.88x. |
+| Oxen per slave | **0.5** (1 ox per 2 slaves) | Work multiplier 3.0x. Going to 1:1 gives 4.0x but doubles oxen feed costs. |
+| Overseers per slave | **1 per 15** | Motivation ~0.63. At 1:25, motivation drops to ~0.40. Without overseers, motivation is near zero — slaves do no work. |
+| Horses per overseer | **2** | Overseer effectiveness reaches ~0.99 (near max). This is essential because unmounted overseers start at only 0.30 effectiveness. |
+| Manure per acre | **3-5 tons** | Yield jumps from 20 bu/bu-seed (bare) to 100 (3 tons) to 200 (5 tons). Beyond 5 tons yield drops due to over-fertilization. |
 | Assets to debt | **2:1 or better** | The bank forecloses when the loan-to-net-worth ratio exceeds a threshold. Keeping assets at twice your debt keeps the bank happy and your credit rating rising. |
 
 ### Planting Calendar
 
-The seasonal yield multiplier peaks in June-July (1.0x) and bottoms out in
-January (0.2x). Since land takes three months to progress from Planted to
-Ripe, the optimal planting window is:
+The seasonal yield multiplier peaks around June-July (~1.27x) and bottoms
+out in January (0.2x). The yield is determined at planting time, not
+harvest time. Land takes three months to progress from Planted to Ripe.
+The optimal planting window is:
 
-| Plant in | Ripe in | Seasonal Yield |
-|----------|---------|----------------|
-| March    | June    | 0.95x          |
-| April    | July    | 1.0x (best)    |
-| May      | August  | 0.95x          |
+| Plant in | Ripe in   | Seasonal Yield |
+|----------|-----------|----------------|
+| May      | August    | 0.93x          |
+| June     | September | 1.27x (best)   |
+| July     | October   | 1.27x (tied)   |
 
-Avoid planting in September-December. A January harvest yields only 20% of
-a July harvest from the same land. Spread manure before planting for maximum
-yield.
+Avoid planting in October-February. A December planting yields only ~25%
+of a June planting from the same land. Spread manure before planting for
+maximum yield.
 
 ### Building the Economy (Months 6-18)
 
-- Reinvest wheat profits into more land, slaves, and oxen. Compounding
-  matters -- doubling your land early pays off for 38 more years.
+- **Farm aggressively.** At 5 tons/acre manure, each bushel of seed returns
+  ~200 bushels (modified by seasonal yield). Farming is the primary wealth
+  engine — 10 acres planted in June yields ~25,000+ bushels from only 200
+  bushels of seed.
+- Populations grow fast at health 1.0 (~14%/mo for slaves). By month 12,
+  expect 100 slaves to reach 350-450. Scale overseers and oxen to match.
 - Start paying down the loan when cash flow allows. Interest bleeds gold
-  every month, and the Banker neighbor grows increasingly aggressive about
-  collections.
-- Take **sell contracts** selectively (you grow wheat, they pay you). Avoid
-  buy contracts until you have cash reserves -- the 10% penalty for failure
-  hurts.
-- Once you have 3+ overseers, buy horses at a 3:1 horse-to-overseer ratio.
-  This nearly doubles overseer effectiveness and unlocks the full work output
-  of your slaves.
+  every month (0.5%/mo), and the Banker neighbor grows increasingly
+  aggressive about collections.
+- Take **sell contracts** selectively (you deliver wheat, they pay gold).
+  Avoid buy contracts until you have cash reserves — the 5% default penalty
+  is based on total contract price.
 
-### Pyramid Strategy (Year 5+)
+### Pyramid Strategy (Year 2+)
 
-Do not set a pyramid stone quota until the economy is self-sustaining. Each
-stone requires `avgPyramidHeight * 12` man-hours of slave labor per month,
-so:
+Each stone requires `avgPyramidHeight × 12` man-hours of slave labor per
+month. With ~3,770 hours of work capacity for 100 slaves, there is room to
+start a modest quota early:
 
 - **Start low.** When the pyramid is short, stones are cheap to lay. A quota
-  of 5-10 stones/month is nearly free early on.
+  of 5-10 stones/month costs little labor early on.
 - **Scale up gradually.** As height increases, each stone costs more labor.
-  A slave can lay roughly 3 stones/month at low heights, but far fewer as
-  the pyramid grows.
+  With the rapid population growth (~14%/mo for slaves at health 1.0), work
+  capacity scales up quickly to match.
 - **Watch slave efficiency.** If efficiency drops below 1.0, all activities
   (farming, harvesting, pyramid building) are proportionally reduced. An
   overambitious quota starves the farm, which starves the slaves, which
   collapses everything.
-- **The pyramid is a year-20+ problem.** On Easy (100 ft target), a modest
-  steady effort suffices. On Hard (1,000 ft), you need a massive industrial
-  economy before serious building can begin.
+- **The pyramid is a year-10+ problem.** On Easy (~115 ft target), the fast
+  population growth means a modest steady effort suffices. On Hard (~1,155
+  ft), you need a massive industrial economy before serious building can
+  begin.
 
 ### Sample Easy-Mode Starting Configuration
 
@@ -2284,58 +2290,45 @@ borrows from the 5,000,000-gold credit line and buys the following:
 |------------|-------:|----------:|-----------:|
 | Land       |     80 |     1,000 |     80,000 |
 | Slaves     |    100 |     1,000 |    100,000 |
-| Oxen       |     50 |       300 |     15,000 |
-| Horses     |     15 |       500 |      7,500 |
+| Oxen       |     50 |        90 |      4,500 |
+| Horses     |     15 |       100 |      1,500 |
 | Wheat      | 20,000 |        10 |    200,000 |
-| Manure     |    400 |         5 |      2,000 |
-| **Total**  |        |           | **404,500**|
+| Manure     |    400 |        20 |      8,000 |
+| **Total**  |        |           | **394,000**|
 
-Hire **7 overseers** at 100 gold/month each (700 gold/month).
+Hire **7 overseers** at 300 gold/month each (2,100 gold/month).
 
 **Feed Rates**
 
 | Population | Rate (bu/mo) | Monthly Wheat | Rationale |
 |------------|-------------:|--------------:|-----------|
-| Slaves     |           10 |         1,000 | Nourishment ~0.10; health climbs above 0.9 |
-| Oxen       |           70 |         3,500 | Nourishment ~0.12; offsets 0.05 aging loss |
-| Horses     |           55 |           825 | Nourishment ~0.14; offsets 0.08 aging loss |
-| **Total**  |              |     **5,325** | Plus ~2% wheat rot per month |
+| Slaves     |           10 |         1,000 | Nourishment 0.18; health stays at 1.0 |
+| Oxen       |           70 |         3,500 | Nourishment 0.09; offsets 0.05 aging, health oscillates 0.95-1.0 |
+| Horses     |           55 |           825 | Nourishment 0.09; offsets 0.08 aging, health oscillates 0.92-1.0 |
+| **Total**  |              |     **5,325** | Plus ~5% wheat rot per month |
 
-The 20,000-bushel wheat stockpile provides roughly 3.5 months of runway
-before the player must buy more wheat from the market.
+The 20,000-bushel wheat stockpile provides roughly 3 months of runway
+before the player must buy more wheat or harvest a crop.
 
-**Spread & Plant — Do Not Farm Initially**
+**Spread & Plant — Start Farming Immediately**
 
 | Setting          | Value | Notes |
 |------------------|------:|-------|
-| Manure to spread |     0 | See "The Labor Bottleneck" below |
-| Acres to plant   |     0 | Begin farming only when slave population exceeds 200 |
+| Manure to spread |    50 | 50 tons on 10 acres = 5 tons/acre |
+| Acres to plant   |    10 | Start small; scale up as population grows |
 
-The 80 acres of land and 400 tons of manure sit idle at first. This is
-intentional — farming is the single most labor-intensive activity in the
-game, and attempting it too early collapses the economy.
+With 100 slaves at health 1.0, total work capacity is about **3,770 hours
+per month** (20 hrs/day work ability × 0.63 motivation × 3.0 ox multiplier
+× 100 slaves). Spreading 50 tons on 10 acres requires only 50×64 + 10×30
+= 3,500 hours — within capacity. Plant in month 1, harvest in month 4.
 
-**The Labor Bottleneck**
+At 5 tons/acre manure and seasonal yield ~0.72 (April), each bushel of seed
+returns ~144 bushels. With 20 bu/acre seed on 10 acres = 200 bu invested,
+expect ~28,800 bushels harvested in month 4 — a massive return that more
+than covers monthly feed costs.
 
-Every activity costs slave-hours: manure spreading costs **64 hours per
-ton** and sowing costs **30 hours per acre**. With 100 slaves at health
-0.8, total work capacity is only about **250 hours per month** (limited
-by motivation, work ability, and oxen multiplier).
-
-For example, spreading 10 tons on 10 acres would require:
-- Manure spreading: 10 × 64 = 640 hours
-- Sowing: 10 × 30 = 300 hours
-- Livestock tending: 65 hours
-- **Total: ~1,005 hours** vs 250 capacity → sl-eff = 0.25
-
-At 25% efficiency, feeding rates drop to 25% of their set values.
-Livestock starves, health crashes, overseers lash slaves, and everything
-spirals. Even 5 tons / 5 acres requires 320 + 150 + 65 = 535 hours —
-still beyond 250 capacity. Farming becomes viable only after the
-slave population grows through breeding (birth rate ~3-5%/mo at health
-1.0) and work capacity rises accordingly.
-
-**Pyramid Quota:** 0 stones/month for the first year. Build the economy first.
+**Pyramid Quota:** 0 stones/month initially. Start 5-10 stones/month once
+farming income stabilizes (around month 4-6).
 
 **Resulting Ratios and Health Targets**
 
@@ -2345,78 +2338,75 @@ slave population grows through breeding (birth rate ~3-5%/mo at health
 | Oxen feed rate        | 70 bu/mo       | Neutral (good > 80, bad < 50) |
 | Horse feed rate       | 55 bu/mo       | Neutral (good > 65, bad < 40) |
 | Slaves per overseer   | 100/7 ≈ 14     | Good (< 15)      |
-| Horses per overseer   | 15/7 ≈ 2       | Good effectiveness |
+| Horses per overseer   | 15/7 ≈ 2       | Good effectiveness (~0.99) |
 | Overseer pressure     | ~0.0           | Good (< 0.2)     |
-| Slave health          | 0.8 → 1.0      | Good (> 0.9) by month 4 |
-| Oxen health           | 0.8 → 1.0      | Healthy (net +0.07/mo) |
-| Horse health          | 0.8 → 1.0      | Healthy (oscillates 0.9-1.0) |
+| Slave health          | 1.0 (stable)   | Excellent         |
+| Oxen health           | oscillates 0.95-1.0 | Good         |
+| Horse health          | oscillates 0.92-1.0 | Good (avg ~0.96) |
 | Credit rating         | 1.0 (starting) | Good (> 0.8)     |
-| Loan                  | ~404,500       | Small vs 5M limit |
+| Loan                  | ~394,000       | Small vs 5M limit |
 
 Oxen and horse feed rates are set below the neighbor "good" thresholds to
 conserve wheat. At 70 and 55 respectively, nourishment still exceeds the
-aging penalty (0.05/mo for oxen, 0.08/mo for horses), so health rises
-steadily. Raise rates to 85 and 70 once wheat reserves allow.
+aging penalty (0.05/mo for oxen, 0.08/mo for horses), so health recovers
+each month after the aging drop. Raise rates to 85 and 70 once wheat
+reserves allow, for smoother health oscillation.
 
 **Understanding the Wheat Economy**
 
-Farming in Pharaoh does **not** produce surplus wheat. The yield formula
-(`wheat_recovered = yield × seed_invested`) means you always get back
-*less* wheat than you planted — at 5 tons/acre manure and a July planting,
-recovery is about 82% of seed. Farming is a partial recovery mechanism,
-not a profit center.
+Farming in Pharaoh is **extremely productive**. The yield formula
+(`wheat_harvested = yield_multiplier × seed_invested`) returns many times
+the seed invested — at 5 tons/acre manure and a June planting (peak
+season), each bushel of seed produces ~254 bushels. Even a modest 10-acre
+plot returns thousands of bushels per harvest cycle.
 
-The real economy runs on **gold from active trading**:
+The economy runs on **farming plus trading**:
 
-- **Livestock breeding.** At health 0.85+, birth rates (~3%/mo) exceed
-  death rates (~0.6%/mo). Herds grow for free and surplus animals can be
-  sold at market price. In 12 months the simulation shows slaves growing
-  from 100 → 175, oxen 50 → 70, horses 15 → 18.
+- **Farming.** The primary wealth engine. 10 acres at 5 tons/acre manure
+  and June planting returns ~25,000+ bushels from 200 bushels of seed.
+  Scale up acreage as the workforce grows.
+- **Livestock breeding.** At health 1.0, slave birth rates (~14%/mo) far
+  exceed death rates (~0.2%/mo). Populations compound rapidly: 100 slaves
+  grow to 350-450 in 12 months. Oxen and horses grow at ~6.5%/mo net.
 - **Contracts.** Sell contracts pay gold for wheat deliveries to neighbors.
 - **Rising prices.** Easy-mode world growth (15%/yr) inflates commodity
   prices, increasing net worth and credit headroom.
-- **The credit line.** With 5M available and a 404,500 starting loan, there
-  is ample room to finance monthly wheat purchases at market price for
-  years while the economy scales up.
+- **The credit line.** With 5M available and a 394,000 starting loan, there
+  is ample room to finance expenses while the farm ramps up.
 
-**The player must actively buy wheat each month.** The 20,000-bushel
-starting stockpile is a buffer, not a permanent supply. Without monthly
-wheat purchases, livestock starves within 4 months and the economy
-collapses. Plan to spend ~5,325 bu/mo × market price on wheat, financed
-through the credit line until trading income covers expenses.
+**The player should buy wheat monthly until the first harvest.** The
+20,000-bushel starting stockpile plus the first farming harvest (month 4)
+should sustain the economy. After that, farming income rapidly makes the
+player self-sufficient in wheat.
 
 **Monthly Costs (approximate)**
 
-- Wheat purchases: ~5,325 bu × 10 gold/bu ≈ 53,250 gold/mo
+- Wheat purchases: ~5,325 bu × 10 gold/bu ≈ 53,250 gold/mo (pre-harvest only)
 - Ownership: (80×100 + 100×10 + 15×5 + 50×3) × ~1.0 ≈ 9,225 gold/mo
-- Overseer salary: 700 gold/mo
-- Interest: 404,500 × 5/1200 ≈ 1,685 gold/mo
-- **Total monthly burn:** ~64,860 gold/mo
+- Overseer salary: 2,100 gold/mo
+- Interest: 394,000 × 0.5/100 ≈ 1,970 gold/mo
+- **Total monthly burn:** ~66,545 gold/mo
 
-At this burn rate, the player borrows roughly 780,000 gold in the first
-year. As livestock herds grow through breeding (~2.4% net growth/mo)
-and contract revenue grows, income gradually overtakes expenses. Begin
-paying down the loan when cash flow turns positive and start a modest
-pyramid quota (5-10 stones/month) around Year 2-3.
+After the first harvest (month 4), wheat purchases drop dramatically as
+farming produces far more wheat than is consumed. The player should begin
+paying down the loan and start a modest pyramid quota.
 
-**When to Start Farming**
+**Scaling Up Farming**
 
-Begin farming when slave population exceeds 200 and health is stable
-at 1.0. Start very small — remember that land in later growth stages
-(sewn, grown, ripe) adds ongoing tending work each month:
+As the slave population grows (~14%/mo net at health 1.0), work capacity
+scales proportionally. Increase farming acreage to match:
 
-| Slaves | Max Farming | Steady-State Work vs Capacity |
-|-------:|-------------|-------------------------------|
-| 200    | 2 tons / 3 acres | ~420 hrs vs ~600 capacity |
-| 300    | 3 tons / 5 acres | ~680 hrs vs ~850 capacity |
-| 500    | 5 tons / 8 acres | ~1,000 hrs vs ~1,400 capacity |
+| Slaves | Capacity | Farming Scale | Notes |
+|-------:|---------:|---------------|-------|
+| 100    |   3,770  | 10 acres / 50 tons manure | First month, fits with ~940 hrs spare |
+| 200    |   7,540  | 30 acres / 150 tons manure | By month ~5; scale overseers to 14 |
+| 400    |  15,080  | 80 acres / 400 tons manure | By month ~10; use all land |
 
-These capacities assume health 1.0 and 7 overseers. Hire more overseers
-as the slave population grows to maintain a good slave-to-overseer ratio
-(< 15:1). Manure per acre (tons spread ÷ acres planted) should be
-3.5-7.0 for the neighbor "good" rating. Even small amounts of farming
-help recover some wheat: at 5 tons/acre manure and summer planting,
-about 82% of seed wheat is recovered.
+Work costs per farming cycle: manure spreading (64 hrs/ton) + sowing
+(30 hrs/acre) + ongoing tending (20 hrs/acre for sewn land, 15 for
+grown) + harvest (20 hrs/ripe acre). Hire more overseers as the slave
+population grows to maintain a good slave-to-overseer ratio (< 15:1).
+Manure per acre should be 3.5-7.0 for the neighbor "good" rating.
 
 ### What to Avoid
 
@@ -2459,12 +2449,12 @@ faster than oxen, reflecting their shorter working lifespan.
 
 ### B.3 Wheat Rot
 
-Stored wheat decays at a rate of 2% per month (`wt-rot-rt = 0.02`), with
+Stored wheat decays at a rate of 5% per month (`wt-rot-rt = 0.05`), with
 slight random variance (Gaussian around 1.0 with sigma 0.1). The rot is
 deducted **before** feeding and sowing calculations, meaning the player
 must account for storage losses when planning wheat allocation.
 
-**Source:** `state.clj:37` — `:wt-rot-rt 0.02`
+**Source:** `state.clj:45` — `:wt-rot-rt 0.05`
 **Source:** `planting.clj:34-35` — `wheat-rot` function
 
 ### B.4 Wheat Efficiency Cap
