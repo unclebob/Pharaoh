@@ -289,6 +289,31 @@
     (is (or (> (:month result) (:month state))
             (> (:year result) (:year state))))))
 
+;; ---- handle-key: string message alert mode ----
+
+(deftest handle-key-string-message-any-key-dismisses
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :message "Error occurred")]
+    (doseq [ch [\a \w \s \1 \space \r]]
+      (is (nil? (:message (inp/handle-key rng state ch)))
+          (str "key " ch " should dismiss string message")))))
+
+(deftest handle-key-string-message-blocks-key-actions
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :message "Error occurred")
+        result (inp/handle-key rng state \w)]
+    ;; Should NOT open a dialog — message dismissal takes priority
+    (is (nil? (:dialog result)))
+    (is (nil? (:message result)))))
+
+(deftest handle-key-string-message-blocks-run
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :message "Error occurred")
+        result (inp/handle-key rng state \r)]
+    ;; Should NOT run — message dismissal takes priority
+    (is (= 1 (:month result)))
+    (is (nil? (:message result)))))
+
 ;; ---- handle-key: main mode, unknown key ----
 
 (deftest handle-key-unknown-clears-message
@@ -1148,4 +1173,20 @@
         state (-> (st/initial-state)
                   (dlg/open-dialog :load-file))
         result (inp/handle-key rng state (char 27))]
+    (is (nil? (:dialog result)))))
+
+;; ---- handle-mouse: string message alert click ----
+
+(deftest handle-mouse-string-message-click-dismisses
+  (let [state (assoc (st/initial-state) :message "Error occurred")
+        [mx my] (click-coords 5 10)
+        result (inp/handle-mouse state mx my)]
+    (is (nil? (:message result)))
+    (is (nil? (:dialog result)))))
+
+(deftest handle-mouse-string-message-blocks-section-click
+  (let [state (assoc (st/initial-state) :message "Error occurred")
+        [mx my] (click-coords 1 1)
+        result (inp/handle-mouse state mx my)]
+    (is (nil? (:message result)))
     (is (nil? (:dialog result)))))

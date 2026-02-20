@@ -142,6 +142,9 @@
       (cond-> (assoc state :reset-visit-timers true)
         (:game-over state) (assoc :quit-clicked true)))
 
+    (string? (:message state))
+    (dissoc state :message)
+
     :else
     (if-let [action (get key-actions key-char)]
       (action state)
@@ -284,10 +287,12 @@
       :else state)))
 
 (defn handle-mouse [state mx my & [rng]]
-  (let [col (int (/ (- mx lay/pad) lay/cell-w))
-        row (int (/ (- my lay/top-pad) lay/cell-h))]
-    (cond
-      (credit-check-mode? state)
+  (if (and (string? (:message state)) (nil? (:dialog state)))
+    (dissoc state :message)
+    (let [col (int (/ (- mx lay/pad) lay/cell-w))
+          row (int (/ (- my lay/top-pad) lay/cell-h))]
+      (cond
+        (credit-check-mode? state)
       (handle-credit-check-click rng state mx my)
 
       (= :confirm-save (get-in state [:dialog :type]))
@@ -363,8 +368,8 @@
       (in-section? col row :pyramid)
       (dlg/open-dialog state :pyramid)
 
-      ;; Contracts section
-      (in-section? col row :contracts)
-      (dlg/open-contracts-dialog state)
+        ;; Contracts section
+        (in-section? col row :contracts)
+        (dlg/open-contracts-dialog state)
 
-      :else state)))
+        :else state))))

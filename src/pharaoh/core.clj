@@ -59,7 +59,7 @@
     :plant "p" :spread "f" :pyramid "q" nil))
 
 (def ^:private radio-labels
-  {:buy-sell ["Buy (b)" "Sell (s)" "Keep/Acquire (k)"]
+  {:buy-sell ["Buy (b)" "Sell (s)" "Keep (k)"]
    :loan     ["Borrow (b)" "Repay (r)"]
    :overseer ["Hire (h)" "Fire (f)" "Obtain (o)"]})
 
@@ -381,6 +381,22 @@
       (q/text (nth btn-labels i) (+ x (/ w 2)) (+ y (/ h 2)))))
   (q/text-align :left :baseline))
 
+(defn- draw-alert-message [text]
+  (let [{:keys [x y w h]} (lay/cell-rect-span 2 9 6 3)
+        text-x (+ x 12) text-w (- w 24)]
+    (q/fill 255 255 230)
+    (q/stroke 180 140 60)
+    (q/stroke-weight 2)
+    (q/rect x y w h 5)
+    (q/stroke-weight 1)
+    (q/fill 0)
+    (q/text-size lay/value-size)
+    (q/text-leading (* lay/value-size 1.3))
+    (q/text (str text) text-x (+ y lay/value-size 12) text-w (- h 32))
+    (q/fill 100)
+    (q/text-size lay/small-size)
+    (q/text "[OK - press any key]" text-x (+ y h -16))))
+
 (defn- show-face-message? [state]
   (and (map? (:message state))
        (nil? (:dialog state))))
@@ -394,6 +410,8 @@
       (draw-contracts-dialog state)
       (when (show-face-message? state)
         (draw-face-message (:message state) faces))
+      (when (and (string? (:message state)) (nil? (:dialog state)))
+        (draw-alert-message (:message state)))
       (menu/draw-menu-bar app))))
 
 (defn- quit! []

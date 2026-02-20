@@ -201,9 +201,9 @@
       (q/text (str "Yr " (:year s) " " (month-names (:month s)))
               (+ x 4) (+ y lay/small-size 4)))
 
-    ;; Message bar (row 24) — plain string messages only
+    ;; Error bar (row 24) — only when dialog is open (inline error feedback)
     (when-let [msg (:message s)]
-      (when (string? msg)
+      (when (and (string? msg) (:dialog s))
         (let [{:keys [x y w h]} (lay/cell-rect-span 0 24 10 1)]
           (q/fill 255 255 220)
           (q/stroke 200)
