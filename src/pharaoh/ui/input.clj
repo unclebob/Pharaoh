@@ -285,7 +285,7 @@
 
       ;; QUIT button (cols 0-1, row 23)
       (and (<= 0 col 1) (= row 23))
-      (assoc state :quit-clicked true)
+      (fa/do-quit state)
 
       ;; Commodities section — open buy/sell for clicked row
       (in-section? col row :commodities)

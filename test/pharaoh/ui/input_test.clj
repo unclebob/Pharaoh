@@ -331,6 +331,21 @@
         result (inp/handle-mouse state mx my)]
     (is (:quit-clicked result))))
 
+(deftest quit-button-when-dirty-prompts-save
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :dirty true)
+        [mx my] (click-coords 0 23)
+        result (inp/handle-mouse state mx my rng)]
+    (is (= :confirm-save (get-in result [:dialog :type])))
+    (is (= :quit (get-in result [:dialog :next-action])))))
+
+(deftest quit-button-when-clean-quits
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :dirty false)
+        [mx my] (click-coords 0 23)
+        result (inp/handle-mouse state mx my rng)]
+    (is (true? (:quit-clicked result)))))
+
 ;; Commodities section click opens buy/sell
 
 (deftest handle-mouse-commodities-wheat
