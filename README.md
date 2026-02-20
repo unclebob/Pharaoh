@@ -89,15 +89,8 @@ to a target amount)
 Click any section on the main screen to open its dialog. Click the
 Run button to advance a month, or Quit to exit.
 
-### File Operations
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl-S   | Save   |
-| Ctrl-O   | Open   |
-| Ctrl-N   | New    |
-
-Games are saved to the `saves/` directory by default.
+Save and load are available from the File menu. Games are saved to the
+`saves/` directory by default.
 
 ## Testing
 
