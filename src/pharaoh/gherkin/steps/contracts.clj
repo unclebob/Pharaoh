@@ -757,4 +757,9 @@
    {:type :then :pattern #"a farewell message is displayed from the farewell pool"
     :handler (fn [w] w)}
    {:type :then :pattern #"all (\d+) pending contracts are present with matching terms"
-    :handler (fn [w _] w)}])
+    :handler (fn [w n]
+               (let [expected (Long/parseLong n)
+                     actual (count (:cont-pend (:state w)))]
+                 (assert (= expected actual)
+                         (str "Expected " expected " pending contracts, got " actual))
+                 w))}])

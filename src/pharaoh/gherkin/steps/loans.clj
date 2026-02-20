@@ -524,7 +524,11 @@
                        "Expected positive credit limit")
                w)}
    {:type :then :pattern #"gold, loan, interest rate, credit rating, and credit limit all match"
-    :handler (fn [w] w)}
+    :handler (fn [w]
+               (let [before (:state-before w) after (:state w)]
+                 (doseq [k [:gold :loan :interest :credit-rating :credit-limit]]
+                   (assert (near? (k before) (k after)) (str k " mismatch")))
+                 w))}
    {:type :then :pattern #"one face is the banker"
     :handler (fn [w]
                (assert (number? (:banker (:state w))) "Expected banker face")

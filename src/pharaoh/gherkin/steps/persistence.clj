@@ -34,6 +34,8 @@
                      (assoc-in [:state :ln-sewn] per)
                      (assoc-in [:state :ln-grown] per)
                      (assoc-in [:state :ln-ripe] per))))}
+   {:type :given :pattern #"the player has (\d+) overseers"
+    :handler (fn [w n] (assoc-in w [:state :overseers] (to-double n)))}
    {:type :given :pattern #"a save file already exists with that name"
     :handler (fn [w]
                (let [path (str "/tmp/pharaoh-test-exists.edn")]
@@ -53,7 +55,8 @@
                  w))}
    {:type :when :pattern #"the game is saved and restored"
     :handler (fn [w]
-               (let [path (str "/tmp/pharaoh-test-" (System/currentTimeMillis) ".edn")]
+               (let [w (snap w)
+                     path (str "/tmp/pharaoh-test-" (System/currentTimeMillis) ".edn")]
                  (ps/save-game (:state w) path)
                  (assoc w :state (ps/load-game path) :save-path path)))}
    {:type :when :pattern #"the player starts a new game"
@@ -93,12 +96,39 @@
     :handler (fn [w] w)}
    {:type :then :pattern #"the player is prompted to save the current game first"
     :handler (fn [w] w)}
-   {:type :then :pattern #"all (.+) match the saved values"
-    :handler (fn [w _] w)}
    {:type :then :pattern #"all (.+) values match the saved values"
-    :handler (fn [w _] w)}
+    :handler (fn [w what]
+               (let [before (:state-before w) after (:state w)]
+                 (case what
+                   "health"
+                   (doseq [k [:sl-health :ox-health :hs-health]]
+                     (assert (near? (k before) (k after)) (str k " mismatch")))
+                   (assert false (str "Unknown values domain: " what)))
+                 w))}
+   {:type :then :pattern #"all (.+) match the saved values"
+    :handler (fn [w what]
+               (let [before (:state-before w) after (:state w)]
+                 (case what
+                   "commodity quantities"
+                   (doseq [k [:wheat :slaves :oxen :horses :manure]]
+                     (assert (near? (k before) (k after)) (str k " mismatch")))
+                   "market prices"
+                   (doseq [k (keys (:prices before))]
+                     (assert (near? (get-in before [:prices k])
+                                    (get-in after [:prices k]))
+                             (str "price " k " mismatch")))
+                   "feed rates and quotas"
+                   (doseq [k [:sl-feed-rt :ox-feed-rt :hs-feed-rt :ln-to-sew :mn-to-sprd]]
+                     (assert (near? (k before) (k after)) (str k " mismatch")))
+                   (assert false (str "Unknown domain: " what)))
+                 w))}
    {:type :then :pattern #"all (\d+) pending contracts are present with matching terms"
-    :handler (fn [w _] w)}
+    :handler (fn [w n]
+               (let [expected (Long/parseLong n)
+                     actual (count (:cont-pend (:state w)))]
+                 (assert (= expected actual)
+                         (str "Expected " expected " pending contracts, got " actual))
+                 w))}
    {:type :then :pattern #"then all state is reset to initial values"
     :handler (fn [w]
                (assert (= 1 (:month (:state w))))
@@ -110,9 +140,17 @@
    {:type :then :pattern #"the player is prompted for a save file name"
     :handler (fn [w] w)}
    {:type :then :pattern #"overseer count and pressure match the saved values"
-    :handler (fn [w] w)}
+    :handler (fn [w]
+               (let [before (:state-before w) after (:state w)]
+                 (assert (near? (:overseers before) (:overseers after)) "overseer count mismatch")
+                 (assert (near? (:ov-press before) (:ov-press after)) "overseer pressure mismatch")
+                 w))}
    {:type :then :pattern #"gold, loan, interest rate, credit rating, and credit limit all match"
-    :handler (fn [w] w)}
+    :handler (fn [w]
+               (let [before (:state-before w) after (:state w)]
+                 (doseq [k [:gold :loan :interest :credit-rating :credit-limit]]
+                   (assert (near? (k before) (k after)) (str k " mismatch")))
+                 w))}
    {:type :then :pattern #"the file is overwritten with the current state"
     :handler (fn [w]
                (assert (:save-path w) "Expected save path")

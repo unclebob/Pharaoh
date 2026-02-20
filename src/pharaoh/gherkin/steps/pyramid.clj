@@ -162,7 +162,11 @@
    {:type :then :pattern #"stones added = (.+)"
     :handler (fn [w _] w)}
    {:type :then :pattern #"pyramid stones, height, and quota all match"
-    :handler (fn [w] w)}
+    :handler (fn [w]
+               (let [before (:state-before w) after (:state w)]
+                 (doseq [k [:py-stones :py-height :py-quota]]
+                   (assert (near? (k before) (k after)) (str k " mismatch")))
+                 w))}
    {:type :then :pattern #"pyramid work = .+"
     :handler (fn [w] w)}
    {:type :then :pattern #"determinant = .+"
