@@ -2122,7 +2122,7 @@ Repayment sign-offs:
 
 ---
 
-## Appendix A: Character Portraits
+## Appendix B: Character Portraits
 
 The four neighbor character portraits were extracted from the original Pharaoh
 1.2 resource fork (PICT v1 resources). The original 1-bit bitmaps have been
@@ -2173,7 +2173,7 @@ to that neighbor.
 
 ---
 
-## Appendix B: Strategy Guide
+## Appendix C: Strategy Guide
 
 ### Opening Moves (Months 1-6)
 
@@ -2502,13 +2502,13 @@ wheat, 80 acres, loan 393,200). Borrow 200,000 gold operating capital.
 
 ---
 
-## Appendix B — Known Deviations from Original C Source
+## Appendix D — Known Deviations from Original C Source
 
 The following behaviors exist in the implementation but were not explicitly
 documented in the original spec. They are preserved intentionally as they
 match the original C game logic.
 
-### B.1 Pharaoh as +1 Overseer
+### D.1 Pharaoh as +1 Overseer
 
 The slave-to-overseer ratio is calculated as `slaves / (overseers + 1)`.
 The player character (the Pharaoh) counts as one overseer. This means even
@@ -2516,7 +2516,7 @@ with zero hired overseers, slaves are not completely unsupervised.
 
 **Source:** `workload.clj:47` — `sl-ov (/ (:slaves state) (+ (:overseers state) 1))`
 
-### B.2 Livestock Aging Penalties
+### D.2 Livestock Aging Penalties
 
 Oxen lose 0.05 health per month and horses lose 0.08 health per month as a
 base aging penalty, independent of feeding and nourishment. This aging only
@@ -2525,7 +2525,7 @@ faster than oxen, reflecting their shorter working lifespan.
 
 **Source:** `health.clj:24` (oxen 0.05), `health.clj:32` (horses 0.08)
 
-### B.3 Wheat Rot
+### D.3 Wheat Rot
 
 Stored wheat decays at a rate of 5% per month (`wt-rot-rt = 0.05`), with
 slight random variance (Gaussian around 1.0 with sigma 0.1). The rot is
@@ -2535,7 +2535,7 @@ must account for storage losses when planning wheat allocation.
 **Source:** `state.clj:45` — `:wt-rot-rt 0.05`
 **Source:** `planting.clj:34-35` — `wheat-rot` function
 
-### B.4 Wheat Efficiency Cap
+### D.4 Wheat Efficiency Cap
 
 When total wheat demand (feeding + sowing) exceeds available wheat after
 rot, all consumption is proportionally reduced by a wheat efficiency factor
@@ -2545,12 +2545,12 @@ any single use.
 
 **Source:** `feeding.clj:20-37` — `apply-wheat-shortage` function
 
-### B.5 Interest Rate Display Format
+### D.5 Interest Rate Display Format
 
 The spec's loan approval messages use `%.2f%%` format (two decimal places
 for interest rate percentage). The implementation matches this format.
 
-### B.6 Workload Event Message Format
+### D.6 Workload Event Message Format
 
 The spec's workload event messages use `%s` template substitution for
 man-hours values. The implementation formats the man-hours as `"%.0f
