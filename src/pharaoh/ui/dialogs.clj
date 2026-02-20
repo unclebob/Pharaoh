@@ -36,7 +36,7 @@
   (assoc-in state [:dialog :mode] :browsing))
 
 (defn close-dialog [state]
-  (dissoc state :dialog))
+  (-> state (dissoc :dialog) (assoc :dirty true)))
 
 (defn accept-selected [state]
   (let [d (:dialog state)

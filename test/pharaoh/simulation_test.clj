@@ -115,6 +115,13 @@
     (is (== (:gold r1) (:gold r2)))
     (is (== (:slaves r1) (:slaves r2)))))
 
+(deftest do-run-sets-dirty-flag
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state) (assoc :gold 50000.0 :slaves 10.0
+                                            :overseers 1.0 :wheat 100.0))
+        result (sim/do-run rng state)]
+    (is (true? (:dirty result)))))
+
 (deftest do-run-includes-event-check
   (let [rng (r/make-rng 42)
         state (game-state)

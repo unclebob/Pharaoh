@@ -208,8 +208,9 @@
                           [(assoc state :last-event type) type])
                         [state nil])
         state (run-month rng state)]
-    (if etype
-      (let [msg (ev/event-message rng etype nil)
-            face (long (r/uniform rng 0 4))]
-        (assoc state :message {:text (or msg "Something happened...") :face face}))
-      (pop-contract-msg state))))
+    (-> (if etype
+          (let [msg (ev/event-message rng etype nil)
+                face (long (r/uniform rng 0 4))]
+            (assoc state :message {:text (or msg "Something happened...") :face face}))
+          (pop-contract-msg state))
+        (assoc :dirty true))))

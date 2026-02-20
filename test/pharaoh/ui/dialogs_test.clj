@@ -45,6 +45,12 @@
   (let [state (dlg/close-dialog (st/initial-state))]
     (is (nil? (:dialog state)))))
 
+(deftest close-dialog-sets-dirty-flag
+  (let [state (-> (st/initial-state)
+                  (dlg/open-dialog :buy-sell)
+                  dlg/close-dialog)]
+    (is (true? (:dirty state)))))
+
 (deftest close-dialog-preserves-rest-of-state
   (let [base (assoc (st/initial-state) :gold 9999.0)
         state (-> base
