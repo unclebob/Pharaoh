@@ -39,13 +39,10 @@
     (is (= :confirm-save (get-in result [:dialog :type])))
     (is (= :new-game (get-in result [:dialog :next-action])))))
 
-(deftest new-game-when-clean-resets-state
+(deftest new-game-when-clean-sets-pending-action
   (let [state (assoc (st/initial-state) :dirty false :gold 9999.0)
         result (fa/do-new-game state)]
-    (is (= 0.0 (:gold result)))
-    (is (= 1 (:month result)))
-    (is (false? (:dirty result)))
-    (is (nil? (:save-path result)))))
+    (is (= :new-game (:pending-action result)))))
 
 (deftest quit-when-dirty-prompts-save
   (let [state (assoc (st/initial-state) :dirty true)

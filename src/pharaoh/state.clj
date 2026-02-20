@@ -96,7 +96,7 @@
       :prices (assoc (:prices state) :land 1000.0 :wheat 10.0 :slaves 1000.0)
       :slaves 100.0 :oxen 50.0 :horses 7.0
       :wheat 20000.0 :manure 400.0 :ln-fallow 80.0
-      :overseers 7 :loan 393200.0 :gold 0.0
+      :overseers 7 :loan 393200.0 :gold 40000.0
       :sl-feed-rt 10.0 :ox-feed-rt 70.0 :hs-feed-rt 55.0
       :mn-to-sprd 50.0 :ln-to-sew 10.0)
     "Normal"

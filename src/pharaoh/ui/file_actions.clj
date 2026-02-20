@@ -20,8 +20,7 @@
 (defn do-new-game [state]
   (if (:dirty state)
     (dlg/open-dialog state :confirm-save {:next-action :new-game})
-    (-> (st/initial-state)
-        (assoc :dirty false :save-path nil))))
+    (assoc state :pending-action :new-game)))
 
 (defn do-load-file [state filename]
   (let [path (ps/save-path filename)

@@ -405,7 +405,7 @@
         clean (dissoc new-state :pending-action)]
     (case action
       :quit (do (quit!) app)
-      :new-game (assoc app :state (assoc (st/initial-state) :dirty false :save-path nil))
+      :new-game (su/reset-for-new-game app)
       :load (assoc app :state (dlg/open-dialog clean :load-file))
       (assoc app :state clean))))
 

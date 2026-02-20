@@ -2300,6 +2300,13 @@ borrows from the 5,000,000-gold credit line and buys the following:
 
 Hire **7 overseers** at 300 gold/month each (2,100 gold/month).
 
+**Starting gold: 40,000.** This covers approximately 3 months of total
+expenses: overseer salary (2,100/mo), ownership costs (~9,185/mo), and
+loan interest (~1,970/mo). Ownership costs are charged monthly at
+`land×100 + slaves×10 + horses×5 + oxen×3` gold, multiplied by a
+random factor averaging ~1.0. If gold goes negative before the
+emergency loan tops it up, overseers quit and demand a raise.
+
 **Feed Rates**
 
 | Population | Rate (bu/mo) | Monthly Wheat | Rationale |
@@ -2384,10 +2391,10 @@ player self-sufficient in wheat.
 **Monthly Costs (approximate)**
 
 - Wheat purchases: ~5,325 bu × 10 gold/bu ≈ 53,250 gold/mo (pre-harvest only)
-- Ownership: (80×100 + 100×10 + 15×5 + 50×3) × ~1.0 ≈ 9,225 gold/mo
+- Ownership: (80×100 + 100×10 + 7×5 + 50×3) × ~1.0 ≈ 9,185 gold/mo
 - Overseer salary: 2,100 gold/mo
 - Interest: 394,000 × 0.5/100 ≈ 1,970 gold/mo
-- **Total monthly burn:** ~66,545 gold/mo
+- **Total monthly burn:** ~66,505 gold/mo
 
 After the first harvest (month 4), wheat purchases drop dramatically as
 farming produces far more wheat than is consumed. The player should begin

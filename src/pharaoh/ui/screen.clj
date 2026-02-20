@@ -175,18 +175,20 @@
 
     ;; === Controls (row 23-24) ===
     ;; Quit button (cols 0-1)
-    (let [{:keys [x y w h]} (lay/cell-rect-span 0 23 2 1)]
-      (q/fill 200)
-      (q/stroke 160)
+    (let [{:keys [x y w h]} (lay/cell-rect-span 0 23 2 1)
+          hover? (= :quit (:hover-btn s))]
+      (if hover? (q/fill 230 180 180) (q/fill 200))
+      (q/stroke (if hover? 180 160))
       (q/rect x y w h 5)
       (q/fill 0)
       (q/text-size lay/title-size)
       (q/text "QUIT" (+ x (/ w 4)) (+ y lay/title-size 4)))
 
     ;; Run button (cols 8-9)
-    (let [{:keys [x y w h]} (lay/cell-rect-span 8 23 2 1)]
-      (q/fill 100 180 100)
-      (q/stroke 80 140 80)
+    (let [{:keys [x y w h]} (lay/cell-rect-span 8 23 2 1)
+          hover? (= :run (:hover-btn s))]
+      (if hover? (q/fill 130 220 130) (q/fill 100 180 100))
+      (q/stroke (if hover? 100 80) (if hover? 180 140) (if hover? 100 80))
       (q/rect x y w h 5)
       (q/fill 0)
       (q/text-size lay/title-size)

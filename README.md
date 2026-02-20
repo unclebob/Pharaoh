@@ -485,12 +485,16 @@ the `saves/` directory by default.
 
 **Easy:** You win by building a pyramid 100 ft tall. The bank will
 never reduce your credit limit lower than 5,000,000 gold pieces, and
-the market prices start out in your overwhelming favor. This does not
-mean the easy level is easy to play. It should take you some time to
-get the hang of how to win. But winning is possible if you develop
-the proper business strategy, and are careful. At this level, your
-wheat production will most likely never get high enough to have
-serious economic effects.
+the market prices start out in your overwhelming favor. The game
+starts with commodities, overseers, feed rates, and planting already
+configured. Be aware of **ownership costs**: every month you pay
+`land×100 + slaves×10 + horses×5 + oxen×3` gold to maintain your
+holdings, plus overseer salaries and loan interest. If gold goes
+negative, overseers quit. This does not mean the easy level is easy
+to play. It should take you some time to get the hang of how to win.
+But winning is possible if you develop the proper business strategy,
+and are careful. At this level, your wheat production will most likely
+never get high enough to have serious economic effects.
 
 **Moderate:** Your pyramid must reach 300 ft. The bank can reduce
 your credit limit all the way to 500,000, and the market prices start

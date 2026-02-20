@@ -108,3 +108,30 @@
         app {:state (st/initial-state) :screen :difficulty :rng rng}
         result (su/select-difficulty app "Normal")]
     (is (= 15 (count (get-in result [:state :cont-offers]))))))
+
+;; --- reset-for-new-game ---
+
+(deftest reset-for-new-game-sets-screen-to-difficulty
+  (let [app {:state (assoc (st/initial-state) :gold 9999.0 :dirty true)
+             :screen :game :rng (r/make-rng 1)}
+        result (su/reset-for-new-game app)]
+    (is (= :difficulty (:screen result)))))
+
+(deftest reset-for-new-game-creates-fresh-state
+  (let [app {:state (assoc (st/initial-state) :gold 9999.0 :dirty true)
+             :screen :game :rng (r/make-rng 1)}
+        result (su/reset-for-new-game app)]
+    (is (== 0.0 (get-in result [:state :gold])))
+    (is (= 1 (get-in result [:state :month])))
+    (is (false? (get-in result [:state :dirty])))
+    (is (nil? (get-in result [:state :save-path])))))
+
+(deftest reset-for-new-game-initializes-neighbor-men
+  (let [app {:state (st/initial-state) :screen :game :rng (r/make-rng 42)}
+        result (su/reset-for-new-game app)
+        s (:state result)]
+    (is (integer? (:banker s)))
+    (is (integer? (:good-guy s)))
+    (is (integer? (:bad-guy s)))
+    (is (integer? (:dumb-guy s)))
+    (is (not= (:banker s) (:good-guy s)))))

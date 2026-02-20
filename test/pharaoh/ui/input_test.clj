@@ -303,9 +303,17 @@
   "Compute pixel coords for center of grid cell (col, row)."
   [col row]
   [(+ (* col lay/cell-w) lay/pad (/ lay/cell-w 2))
-   (+ (* row lay/cell-h) lay/pad (/ lay/cell-h 2))])
+   (+ (* row lay/cell-h) lay/top-pad (/ lay/cell-h 2))])
 
 ;; RUN button (cols 8-9, row 23)
+
+(deftest handle-mouse-run-button-at-drawn-position
+  (let [state (st/initial-state)
+        {:keys [x y w h]} (lay/cell-rect-span 8 23 2 1)
+        mx (+ x (/ w 2))
+        my (+ y (/ h 2))
+        result (inp/handle-mouse state mx my)]
+    (is (:run-clicked result))))
 
 (deftest handle-mouse-run-button
   (let [state (st/initial-state)
@@ -648,7 +656,27 @@
 (deftest mouse-move-no-dialog-returns-state-unchanged
   (let [state (st/initial-state)
         result (inp/handle-mouse-move state 100 100)]
-    (is (= state result))))
+    (is (nil? (:dialog result)))))
+
+;; ---- hover tracking for Run/Quit buttons ----
+
+(deftest mouse-move-over-run-button-sets-hover
+  (let [state (st/initial-state)
+        [mx my] (click-coords 8 23)
+        result (inp/handle-mouse-move state mx my)]
+    (is (= :run (:hover-btn result)))))
+
+(deftest mouse-move-over-quit-button-sets-hover
+  (let [state (st/initial-state)
+        [mx my] (click-coords 0 23)
+        result (inp/handle-mouse-move state mx my)]
+    (is (= :quit (:hover-btn result)))))
+
+(deftest mouse-move-elsewhere-clears-hover
+  (let [state (assoc (st/initial-state) :hover-btn :run)
+        [mx my] (click-coords 5 10)
+        result (inp/handle-mouse-move state mx my)]
+    (is (nil? (:hover-btn result)))))
 
 ;; ---- confirm dialog button clicks ----
 
@@ -1004,6 +1032,44 @@
                   (dlg/open-dialog :confirm-save {:next-action :quit}))
         result (inp/handle-key rng state (char 27))]
     (is (nil? (:dialog result)))))
+
+;; ---- handle-mouse: confirm-save dialog buttons ----
+
+(defn- confirm-save-btn-center [btn-key]
+  (let [{:keys [x y h]} (lay/cell-rect-span 2 8 6 5)
+        btn-y (+ y h -20 (- lay/title-size) -8)
+        btn-x (case btn-key
+                :yes (+ x 8)
+                :no (+ x 120)
+                :cancel (+ x 232))]
+    [(+ btn-x 50) (+ btn-y (/ lay/title-size 2))]))
+
+(deftest click-confirm-save-no-sets-pending-action
+  (let [state (-> (st/initial-state)
+                  (assoc :dirty true)
+                  (dlg/open-dialog :confirm-save {:next-action :new-game}))
+        [mx my] (confirm-save-btn-center :no)
+        result (inp/handle-mouse state mx my)]
+    (is (= :new-game (:pending-action result)))
+    (is (nil? (:dialog result)))))
+
+(deftest click-confirm-save-yes-saves-and-sets-pending
+  (let [path (str "/tmp/pharaoh-cs-" (System/currentTimeMillis) ".edn")
+        state (-> (st/initial-state)
+                  (assoc :dirty true :save-path path)
+                  (dlg/open-dialog :confirm-save {:next-action :quit}))
+        [mx my] (confirm-save-btn-center :yes)
+        result (inp/handle-mouse state mx my)]
+    (is (= :quit (:pending-action result)))
+    (is (false? (:dirty result)))))
+
+(deftest click-confirm-save-cancel-closes-dialog
+  (let [state (-> (st/initial-state)
+                  (dlg/open-dialog :confirm-save {:next-action :new-game}))
+        [mx my] (confirm-save-btn-center :cancel)
+        result (inp/handle-mouse state mx my)]
+    (is (nil? (:dialog result)))
+    (is (nil? (:pending-action result)))))
 
 ;; ---- handle-key: confirm-overwrite dialog ----
 

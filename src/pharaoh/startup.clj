@@ -1,5 +1,6 @@
 (ns pharaoh.startup
   (:require [pharaoh.contracts :as ct]
+            [pharaoh.neighbors :as nb]
             [pharaoh.state :as st]
             [pharaoh.ui.layout :as lay]))
 
@@ -33,6 +34,13 @@
           (when (in-rect? px py (button-rect i))
             (nth difficulties i)))
         (range 3)))
+
+(defn reset-for-new-game [app]
+  (let [men (nb/set-men (:rng app))]
+    (-> app
+        (assoc :state (merge (st/initial-state) men
+                             {:dirty false :save-path nil}))
+        (assoc :screen :difficulty))))
 
 (defn select-difficulty [app difficulty]
   (if difficulty

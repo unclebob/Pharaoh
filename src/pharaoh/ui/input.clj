@@ -196,7 +196,15 @@
         idx (int (/ (- my y0) row-h))]
     idx))
 
-(defn handle-mouse-move [state _mx my]
+(defn- hover-button [mx my]
+  (let [col (int (/ (- mx lay/pad) lay/cell-w))
+        row (int (/ (- my lay/top-pad) lay/cell-h))]
+    (when (= row 23)
+      (cond
+        (<= 8 col 9) :run
+        (<= 0 col 1) :quit))))
+
+(defn handle-mouse-move [state mx my]
   (if (and (= :contracts (get-in state [:dialog :type]))
            (= :browsing (get-in state [:dialog :mode])))
     (let [idx (hover-row-index my)
@@ -204,7 +212,7 @@
       (if (and (>= idx 0) (< idx n))
         (assoc-in state [:dialog :selected] idx)
         state))
-    state))
+    (assoc state :hover-btn (hover-button mx my))))
 
 (def ^:private mode-dialog-types #{:buy-sell :loan :overseer})
 
@@ -260,12 +268,35 @@
        (not= :contracts (get-in state [:dialog :type]))
        (not (credit-check-mode? state))))
 
+(defn- confirm-dialog-bounds []
+  (let [{:keys [x y h]} (lay/cell-rect-span 2 8 6 5)
+        btn-y (+ y h -20 (- lay/title-size) -8)]
+    {:yes    {:x (+ x 8)   :y btn-y :w 100 :h lay/title-size}
+     :no     {:x (+ x 120) :y btn-y :w 100 :h lay/title-size}
+     :cancel {:x (+ x 232) :y btn-y :w 100 :h lay/title-size}}))
+
+(defn- handle-confirm-dialog-click [state mx my yes-fn no-fn]
+  (let [{:keys [yes no cancel]} (confirm-dialog-bounds)]
+    (cond
+      (in-rect? mx my yes)    (yes-fn state)
+      (in-rect? mx my no)     (no-fn state)
+      (in-rect? mx my cancel) (dlg/close-dialog state)
+      :else state)))
+
 (defn handle-mouse [state mx my & [rng]]
   (let [col (int (/ (- mx lay/pad) lay/cell-w))
-        row (int (/ (- my lay/pad) lay/cell-h))]
+        row (int (/ (- my lay/top-pad) lay/cell-h))]
     (cond
       (credit-check-mode? state)
       (handle-credit-check-click rng state mx my)
+
+      (= :confirm-save (get-in state [:dialog :type]))
+      (handle-confirm-dialog-click state mx my
+        dlg/handle-confirm-save-yes dlg/handle-confirm-save-no)
+
+      (= :confirm-overwrite (get-in state [:dialog :type]))
+      (handle-confirm-dialog-click state mx my
+        (partial handle-overwrite-yes rng) dlg/close-dialog)
 
       (and (= :contracts (get-in state [:dialog :type]))
            (= :confirming (get-in state [:dialog :mode])))

@@ -117,7 +117,7 @@
   (let [s (st/set-difficulty (st/initial-state) "Easy")]
     (is (== 7 (:overseers s)))
     (is (== 393200.0 (:loan s)))
-    (is (== 0.0 (:gold s)))))
+    (is (== 40000.0 (:gold s)))))
 
 (deftest set-difficulty-easy-sets-feed-rates
   (let [s (st/set-difficulty (st/initial-state) "Easy")]
