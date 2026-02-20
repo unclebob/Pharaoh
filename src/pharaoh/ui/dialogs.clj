@@ -193,6 +193,12 @@
                                (format (msg/pick rng msg/supply-limit-messages)
                                        (:max-amount v)))
                         (close-dialog (tr/sell rng state commodity amt))))
+              :keep (let [current (get state commodity 0.0)
+                          delta (- amt current)]
+                      (cond
+                        (pos? delta) (close-dialog (tr/buy rng state commodity delta))
+                        (neg? delta) (close-dialog (tr/sell rng state commodity (- delta)))
+                        :else (close-dialog state)))
               (assoc state :message
                      (pick-error rng :buysell-no-function))))
 
@@ -241,6 +247,7 @@
                     (if (:error result)
                       (assoc state :message (:error result))
                       (close-dialog result)))
+            :obtain (close-dialog (ov/obtain state (long amt)))
             (assoc state :message
                    (pick-error rng :overseer-no-function)))
 

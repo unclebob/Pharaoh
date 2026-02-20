@@ -540,6 +540,52 @@
     (let [result (dlg/execute-dialog rng state)]
       (is (string? (:message result))))))
 
+(deftest execute-dialog-keep-buys-deficit
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :wheat 300.0 :gold 50000.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :keep)
+                  (assoc-in [:dialog :input] "500"))]
+    (let [result (dlg/execute-dialog rng state)]
+      (is (nil? (:dialog result)))
+      (is (> (:wheat result) 300.0))
+      (is (< (:gold result) 50000.0)))))
+
+(deftest execute-dialog-keep-sells-excess
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :wheat 500.0 :gold 0.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :keep)
+                  (assoc-in [:dialog :input] "200"))]
+    (let [result (dlg/execute-dialog rng state)]
+      (is (nil? (:dialog result)))
+      (is (== 200.0 (:wheat result)))
+      (is (> (:gold result) 0.0)))))
+
+(deftest execute-dialog-keep-exact-match-closes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :wheat 300.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :keep)
+                  (assoc-in [:dialog :input] "300"))]
+    (let [result (dlg/execute-dialog rng state)]
+      (is (nil? (:dialog result)))
+      (is (== 300.0 (:wheat result))))))
+
+(deftest execute-dialog-obtain-sets-overseers
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :overseers 5.0)
+                  (dlg/open-dialog :overseer)
+                  (dlg/set-dialog-mode :obtain)
+                  (assoc-in [:dialog :input] "10"))]
+    (let [result (dlg/execute-dialog rng state)]
+      (is (nil? (:dialog result)))
+      (is (== 10 (:overseers result))))))
+
 (deftest execute-dialog-overseer-no-mode-sets-message
   (let [rng (r/make-rng 42)
         state (-> (st/initial-state)

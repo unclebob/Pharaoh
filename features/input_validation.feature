@@ -51,6 +51,11 @@ Feature: Input Validation
     When the player presses 's'
     Then the dialog mode is set to sell
 
+  Scenario: Keep/Acquire mode is selected with 'k' key
+    Given a buy-sell dialog is open for wheat
+    When the player presses 'k'
+    Then the dialog mode is set to keep
+
   # -----------------------------------------------------------
   # Loan Mode Selection
   # -----------------------------------------------------------
@@ -90,6 +95,52 @@ Feature: Input Validation
     Given an overseer dialog is open
     When the player presses 'f'
     Then the dialog mode is set to fire
+
+  Scenario: Obtain mode is selected with 'o' key
+    Given an overseer dialog is open
+    When the player presses 'o'
+    Then the dialog mode is set to obtain
+
+  # -----------------------------------------------------------
+  # Keep/Acquire Dialog Execution
+  # -----------------------------------------------------------
+
+  Scenario: Keep mode buys deficit when target exceeds current holdings
+    Given a buy-sell dialog is open for wheat
+    And the player has 300 bushels of wheat
+    And the player has 50000 gold
+    And the dialog mode is set to keep
+    And the dialog input contains "500"
+    When the player presses enter
+    Then the dialog is closed
+
+  Scenario: Keep mode sells excess when target is below current holdings
+    Given a buy-sell dialog is open for wheat
+    And the player has 500 bushels of wheat
+    And the dialog mode is set to keep
+    And the dialog input contains "200"
+    When the player presses enter
+    Then the dialog is closed
+
+  Scenario: Keep mode is no-op when target equals current holdings
+    Given a buy-sell dialog is open for wheat
+    And the player has 300 bushels of wheat
+    And the dialog mode is set to keep
+    And the dialog input contains "300"
+    When the player presses enter
+    Then the dialog is closed
+
+  # -----------------------------------------------------------
+  # Obtain Dialog Execution
+  # -----------------------------------------------------------
+
+  Scenario: Obtain mode sets overseer count directly
+    Given an overseer dialog is open
+    And the player has 5 overseers
+    And the dialog mode is set to obtain
+    And the dialog input contains "10"
+    When the player presses enter
+    Then the dialog is closed
 
   # -----------------------------------------------------------
   # Invalid Number Input

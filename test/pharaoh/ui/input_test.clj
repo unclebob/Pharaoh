@@ -15,6 +15,7 @@
   (let [dmf #'pharaoh.ui.input/dialog-mode-for]
     (is (= :buy (dmf :buy-sell \b)))
     (is (= :sell (dmf :buy-sell \s)))
+    (is (= :keep (dmf :buy-sell \k)))
     (is (nil? (dmf :buy-sell \r)))
     (is (nil? (dmf :buy-sell \h)))))
 
@@ -28,6 +29,7 @@
   (let [dmf #'pharaoh.ui.input/dialog-mode-for]
     (is (= :hire (dmf :overseer \h)))
     (is (= :fire (dmf :overseer \f)))
+    (is (= :obtain (dmf :overseer \o)))
     (is (nil? (dmf :overseer \b)))))
 
 (deftest dialog-mode-for-other-types-return-nil
@@ -778,14 +780,16 @@
   (let [bounds (inp/dialog-button-bounds :buy-sell)]
     (is (contains? bounds :radio1))
     (is (contains? bounds :radio2))
+    (is (contains? bounds :radio3))
     (is (contains? bounds :ok))
     (is (contains? bounds :cancel))
     (let [{:keys [x]} (dialog-rect)
           btn-y (expected-btn-y)]
       (is (= {:x (+ x 8) :y btn-y :w 110 :h lay/title-size} (:radio1 bounds)))
       (is (= {:x (+ x 126) :y btn-y :w 110 :h lay/title-size} (:radio2 bounds)))
-      (is (= {:x (+ x 264) :y btn-y :w 110 :h lay/title-size} (:ok bounds)))
-      (is (= {:x (+ x 382) :y btn-y :w 120 :h lay/title-size} (:cancel bounds))))))
+      (is (= {:x (+ x 244) :y btn-y :w 130 :h lay/title-size} (:radio3 bounds)))
+      (is (= {:x (+ x 382) :y btn-y :w 60 :h lay/title-size} (:ok bounds)))
+      (is (= {:x (+ x 450) :y btn-y :w 60 :h lay/title-size} (:cancel bounds))))))
 
 (deftest dialog-button-bounds-simple-dialog-has-only-buttons
   (let [bounds (inp/dialog-button-bounds :feed)]
@@ -806,7 +810,8 @@
 (deftest dialog-button-bounds-overseer-has-radios
   (let [bounds (inp/dialog-button-bounds :overseer)]
     (is (contains? bounds :radio1))
-    (is (contains? bounds :radio2))))
+    (is (contains? bounds :radio2))
+    (is (contains? bounds :radio3))))
 
 ;; ---- handle-dialog-click ----
 
@@ -854,6 +859,38 @@
         [mx my] (btn-center (:radio2 bounds))
         result (inp/handle-dialog-click state mx my nil)]
     (is (= :fire (get-in result [:dialog :mode])))))
+
+(deftest radio-mode-for-radio3-buy-sell-is-keep
+  (is (= :keep (inp/radio-mode-for :buy-sell :radio3))))
+
+(deftest radio-mode-for-radio3-overseer-is-obtain
+  (is (= :obtain (inp/radio-mode-for :overseer :radio3))))
+
+(deftest click-radio3-in-buy-sell-sets-keep-mode
+  (let [state (dlg/open-dialog (st/initial-state) :buy-sell {:commodity :wheat})
+        bounds (inp/dialog-button-bounds :buy-sell)
+        [mx my] (btn-center (:radio3 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :keep (get-in result [:dialog :mode])))))
+
+(deftest click-radio3-in-overseer-sets-obtain-mode
+  (let [state (dlg/open-dialog (st/initial-state) :overseer)
+        bounds (inp/dialog-button-bounds :overseer)
+        [mx my] (btn-center (:radio3 bounds))
+        result (inp/handle-dialog-click state mx my nil)]
+    (is (= :obtain (get-in result [:dialog :mode])))))
+
+(deftest handle-key-k-sets-keep-mode-in-buy-sell-dialog
+  (let [rng (r/make-rng 42)
+        state (dlg/open-dialog (st/initial-state) :buy-sell {:commodity :wheat})
+        result (inp/handle-key rng state \k)]
+    (is (= :keep (get-in result [:dialog :mode])))))
+
+(deftest handle-key-o-sets-obtain-mode-in-overseer-dialog
+  (let [rng (r/make-rng 42)
+        state (dlg/open-dialog (st/initial-state) :overseer)
+        result (inp/handle-key rng state \o)]
+    (is (= :obtain (get-in result [:dialog :mode])))))
 
 (deftest click-ok-in-buy-sell-executes-dialog
   (let [rng (r/make-rng 42)

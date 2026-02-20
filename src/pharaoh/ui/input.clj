@@ -45,9 +45,11 @@
   (case key-char
     \b (case dtype :buy-sell :buy :loan :borrow nil)
     \s (case dtype :buy-sell :sell nil)
+    \k (case dtype :buy-sell :keep nil)
     \r (case dtype :loan :repay nil)
     \h (case dtype :overseer :hire nil)
     \f (case dtype :overseer :fire nil)
+    \o (case dtype :overseer :obtain nil)
     nil))
 
 (defn- handle-contracts-key [state key-char key-kw]
@@ -212,16 +214,19 @@
     (if (mode-dialog-types dtype)
       {:radio1 {:x (+ x 8) :y btn-y :w 110 :h lay/title-size}
        :radio2 {:x (+ x 126) :y btn-y :w 110 :h lay/title-size}
-       :ok     {:x (+ x 264) :y btn-y :w 110 :h lay/title-size}
-       :cancel {:x (+ x 382) :y btn-y :w 120 :h lay/title-size}}
+       :radio3 {:x (+ x 244) :y btn-y :w 130 :h lay/title-size}
+       :ok     {:x (+ x 382) :y btn-y :w 60 :h lay/title-size}
+       :cancel {:x (+ x 450) :y btn-y :w 60 :h lay/title-size}}
       {:ok     {:x (+ x 8) :y btn-y :w 120 :h lay/title-size}
        :cancel {:x (+ x 136) :y btn-y :w 120 :h lay/title-size}})))
 
 (defn radio-mode-for [dtype which]
   (case [dtype which]
     [:buy-sell :radio1] :buy    [:buy-sell :radio2] :sell
+    [:buy-sell :radio3] :keep
     [:loan :radio1]     :borrow [:loan :radio2]     :repay
     [:overseer :radio1] :hire   [:overseer :radio2]  :fire
+    [:overseer :radio3] :obtain
     nil))
 
 (defn handle-dialog-click [state mx my rng]
@@ -232,6 +237,7 @@
     (case hit
       :radio1 (dlg/set-dialog-mode state (radio-mode-for dtype :radio1))
       :radio2 (dlg/set-dialog-mode state (radio-mode-for dtype :radio2))
+      :radio3 (dlg/set-dialog-mode state (radio-mode-for dtype :radio3))
       :ok     (dlg/execute-dialog rng (dissoc state :message))
       :cancel (dlg/close-dialog state)
       state)))

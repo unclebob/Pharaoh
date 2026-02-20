@@ -59,9 +59,9 @@
     :plant "p" :spread "f" :pyramid "q" nil))
 
 (def ^:private radio-labels
-  {:buy-sell ["Buy (b)" "Sell (s)"]
+  {:buy-sell ["Buy (b)" "Sell (s)" "Keep/Acquire (k)"]
    :loan     ["Borrow (b)" "Repay (r)"]
-   :overseer ["Hire (h)" "Fire (f)"]})
+   :overseer ["Hire (h)" "Fire (f)" "Obtain (o)"]})
 
 (defn- draw-radio [x y label selected?]
   (let [r 6 cx (+ x r) cy (+ y (/ lay/title-size 2))]
@@ -85,16 +85,19 @@
   (let [bounds (inp/dialog-button-bounds (:type d))
         {:keys [ok cancel]} bounds]
     (when-let [labels (radio-labels (:type d))]
-      (let [{r1 :radio1 r2 :radio2} bounds
+      (let [{r1 :radio1 r2 :radio2 r3 :radio3} bounds
             mode (:mode d)]
         (draw-radio (:x r1) (:y r1) (first labels)
                     (= mode (inp/radio-mode-for (:type d) :radio1)))
         (draw-radio (:x r2) (:y r2) (second labels)
-                    (= mode (inp/radio-mode-for (:type d) :radio2)))))
+                    (= mode (inp/radio-mode-for (:type d) :radio2)))
+        (when (and r3 (nth labels 2 nil))
+          (draw-radio (:x r3) (:y r3) (nth labels 2)
+                      (= mode (inp/radio-mode-for (:type d) :radio3))))))
     (draw-button (:x ok) (:y ok) (:w ok) (:h ok)
-                 "OK (Enter)" 180 230 180 80 160 80)
+                 "OK" 180 230 180 80 160 80)
     (draw-button (:x cancel) (:y cancel) (:w cancel) (:h cancel)
-                 "Cancel (Esc)" 230 180 180 160 80 80)))
+                 "Cancel" 230 180 180 160 80 80)))
 
 (defn- draw-dialog-frame [x y w h]
   (q/fill 245 245 255)
