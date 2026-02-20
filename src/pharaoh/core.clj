@@ -1,5 +1,6 @@
 (ns pharaoh.core
   (:require [quil.core :as q]
+            [quil.applet :as applet]
             [quil.middleware :as m]
             [pharaoh.state :as st]
             [pharaoh.random :as r]
@@ -14,7 +15,12 @@
             [pharaoh.ui.menu :as menu]
             [pharaoh.ui.file-actions :as fa]
             [pharaoh.ui.dialogs :as dlg])
+  (:import [javax.swing SwingUtilities WindowConstants]
+           [java.awt.event WindowAdapter])
   (:gen-class))
+
+(def ^:private close-requested (atom false))
+(declare ^:private handle-close-request)
 
 (defn- load-faces []
   (mapv #(q/load-image (str "resources/faces/man" (inc %) ".png"))
@@ -33,9 +39,20 @@
 (defn- init-timers [rng]
   (vis/init-timers rng (System/currentTimeMillis)))
 
+(defn- install-close-handler []
+  (let [canvas (.getNative (.getSurface (applet/current-applet)))
+        frame (SwingUtilities/getWindowAncestor canvas)]
+    (.setDefaultCloseOperation frame WindowConstants/DO_NOTHING_ON_CLOSE)
+    (doseq [l (.getWindowListeners frame)]
+      (.removeWindowListener frame l))
+    (.addWindowListener frame
+      (proxy [WindowAdapter] []
+        (windowClosing [_] (reset! close-requested true))))))
+
 (defn- setup []
   (q/frame-rate 30)
   (q/text-font (q/create-font "Monospaced" lay/value-size))
+  (install-close-handler)
   (let [rng (r/make-rng (System/currentTimeMillis))
         men (nb/set-men rng)]
     (merge
@@ -339,14 +356,15 @@
     (q/text "[press any key]" text-x (+ y h -16))))
 
 (defn- update-app [app]
-  (if (= :game (:screen app))
-    (let [old-msg (get-in app [:state :message])
-          app (vis/check-visits app (System/currentTimeMillis))
-          new-msg (get-in app [:state :message])]
-      (when (and new-msg (not= old-msg new-msg))
-        (speech/speak (:text new-msg) (:face new-msg)))
-      app)
-    app))
+  (let [app (if @close-requested (handle-close-request app) app)]
+    (if (= :game (:screen app))
+      (let [old-msg (get-in app [:state :message])
+            app (vis/check-visits app (System/currentTimeMillis))
+            new-msg (get-in app [:state :message])]
+        (when (and new-msg (not= old-msg new-msg))
+          (speech/speak (:text new-msg) (:face new-msg)))
+        app)
+      app)))
 
 (def ^:private btn-labels
   ["[1] Easy  — small pyramid, generous credit"
@@ -445,8 +463,15 @@
         (vis/reset-timers app (System/currentTimeMillis))
         app))))
 
+(defn- handle-close-request [app]
+  (reset! close-requested false)
+  (if (= :difficulty (:screen app))
+    (do (quit!) app)
+    (let [new-state (fa/do-quit (:state app))]
+      (apply-state-result app new-state))))
+
 (defn- key-pressed [{:keys [screen] :as app} {:keys [raw-key key]}]
-  (set! (.key (quil.applet/current-applet)) (char 0))
+  (set! (.key (applet/current-applet)) (char 0))
   (if (= :difficulty screen)
     (if (= (int raw-key) 27)
       (do (quit!) app)
@@ -512,5 +537,5 @@
     :key-pressed key-pressed
     :mouse-pressed mouse-clicked
     :mouse-moved mouse-moved
-    :on-close (fn [_] (System/exit 0))
+    :on-close (fn [_] nil)
     :middleware [m/fun-mode]))
