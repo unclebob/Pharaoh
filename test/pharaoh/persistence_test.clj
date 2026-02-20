@@ -2,6 +2,9 @@
   (:require [clojure.test :refer :all]
             [pharaoh.persistence :as p]
             [pharaoh.state :as st]
+            [pharaoh.ui.file-actions :as fa]
+            [pharaoh.ui.dialogs :as dlg]
+            [pharaoh.random :as r]
             [clojure.java.io :as io]))
 
 (defn- tmp-file []
@@ -48,3 +51,24 @@
       (is (= 15 (:year loaded)))
       (is (= 200.0 (:slaves loaded)))
       (is (= 50000.0 (:py-stones loaded))))))
+
+(deftest full-save-load-via-file-actions
+  (let [state (-> (st/initial-state)
+                  (assoc :gold 12345.0 :month 7 :year 5 :dirty true))
+        path (tmp-file)
+        ;; Save via file-actions
+        saved (fa/do-save (assoc state :save-path path))]
+    (is (false? (:dirty saved)))
+    (is (.exists (java.io.File. path)))
+    ;; Load into fresh state via dialog
+    (let [fresh (assoc (st/initial-state) :dirty false)
+          with-dialog (fa/do-open fresh)]
+      (is (= :load-file (get-in with-dialog [:dialog :type])))
+      ;; Simulate typing filename and pressing enter
+      (let [typed (assoc-in with-dialog [:dialog :input] path)
+            rng (r/make-rng 42)
+            loaded (dlg/execute-dialog rng typed)]
+        (is (nil? (:dialog loaded)))
+        (is (= 12345.0 (:gold (:loaded-state loaded))))
+        (is (= 7 (:month (:loaded-state loaded))))
+        (is (= 5 (:year (:loaded-state loaded))))))))
