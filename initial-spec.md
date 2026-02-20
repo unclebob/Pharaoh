@@ -2188,8 +2188,10 @@ purchases in this order:
 3. **Overseers** -- Hire immediately. Without overseers, slave motivation
    is near zero and no work gets done. Aim for 1 per 15 slaves (motive ~0.63).
    At 300 gold/month each they are expensive, but essential.
-4. **Horses** -- Buy 2 per overseer. This pushes overseer effectiveness to
-   ~0.99 (near maximum) and unlocks the full work output of your slaves.
+4. **Horses** -- Buy 1 per overseer. With well-fed horses (health 0.8+),
+   horse efficiency is ~0.99, so one horse per overseer gives `hs_ov * hs_eff`
+   ≈ 1.0, hitting maximum overseer effectiveness (0.997). A second horse
+   per overseer is wasted — the table clamps at 1.0.
    Horses are cheap (100 gold each) but eat 50-60 bushels/month.
 5. **Land** -- Buy 50-100 acres. Land costs 100 gold/acre/month in upkeep.
    In Easy mode, land is only 1,000 gold/acre.
@@ -2223,7 +2225,7 @@ health 0).
 |-------|--------|-----|
 | Oxen per slave | **0.5** (1 ox per 2 slaves) | Work multiplier 3.0x. Going to 1:1 gives 4.0x but doubles oxen feed costs. |
 | Overseers per slave | **1 per 15** | Motivation ~0.63. At 1:25, motivation drops to ~0.40. Without overseers, motivation is near zero — slaves do no work. |
-| Horses per overseer | **2** | Overseer effectiveness reaches ~0.99 (near max). This is essential because unmounted overseers start at only 0.30 effectiveness. |
+| Horses per overseer | **1** | With well-fed horses (health 0.8+, efficiency ~0.99), one horse per overseer reaches max effectiveness (0.997). Unmounted overseers start at only 0.30. Extra horses are wasted — the table clamps at input 1.0. |
 | Manure per acre | **3-5 tons** | Yield jumps from 20 bu/bu-seed (bare) to 100 (3 tons) to 200 (5 tons). Beyond 5 tons yield drops due to over-fertilization. |
 | Assets to debt | **2:1 or better** | The bank forecloses when the loan-to-net-worth ratio exceeds a threshold. Keeping assets at twice your debt keeps the bank happy and your credit rating rising. |
 
@@ -2291,10 +2293,10 @@ borrows from the 5,000,000-gold credit line and buys the following:
 | Land       |     80 |     1,000 |     80,000 |
 | Slaves     |    100 |     1,000 |    100,000 |
 | Oxen       |     50 |        90 |      4,500 |
-| Horses     |     15 |       100 |      1,500 |
+| Horses     |      7 |       100 |        700 |
 | Wheat      | 20,000 |        10 |    200,000 |
 | Manure     |    400 |        20 |      8,000 |
-| **Total**  |        |           | **394,000**|
+| **Total**  |        |           | **393,200**|
 
 Hire **7 overseers** at 300 gold/month each (2,100 gold/month).
 
@@ -2304,10 +2306,10 @@ Hire **7 overseers** at 300 gold/month each (2,100 gold/month).
 |------------|-------------:|--------------:|-----------|
 | Slaves     |           10 |         1,000 | Nourishment 0.18; health stays at 1.0 |
 | Oxen       |           70 |         3,500 | Nourishment 0.09; offsets 0.05 aging, health oscillates 0.95-1.0 |
-| Horses     |           55 |           825 | Nourishment 0.09; offsets 0.08 aging, health oscillates 0.92-1.0 |
-| **Total**  |              |     **5,325** | Plus ~5% wheat rot per month |
+| Horses     |           55 |           385 | Nourishment 0.09; offsets 0.08 aging, health oscillates 0.92-1.0 |
+| **Total**  |              |     **4,885** | Plus ~5% wheat rot per month |
 
-The 20,000-bushel wheat stockpile provides roughly 3 months of runway
+The 20,000-bushel wheat stockpile provides roughly 4 months of runway
 before the player must buy more wheat or harvest a crop.
 
 **Spread & Plant — Start Farming Immediately**
@@ -2338,13 +2340,13 @@ farming income stabilizes (around month 4-6).
 | Oxen feed rate        | 70 bu/mo       | Neutral (good > 80, bad < 50) |
 | Horse feed rate       | 55 bu/mo       | Neutral (good > 65, bad < 40) |
 | Slaves per overseer   | 100/7 ≈ 14     | Good (< 15)      |
-| Horses per overseer   | 15/7 ≈ 2       | Good effectiveness (~0.99) |
+| Horses per overseer   | 7/7 = 1        | Max effectiveness (0.997) with well-fed horses |
 | Overseer pressure     | ~0.0           | Good (< 0.2)     |
 | Slave health          | 1.0 (stable)   | Excellent         |
 | Oxen health           | oscillates 0.95-1.0 | Good         |
 | Horse health          | oscillates 0.92-1.0 | Good (avg ~0.96) |
 | Credit rating         | 1.0 (starting) | Good (> 0.8)     |
-| Loan                  | ~394,000       | Small vs 5M limit |
+| Loan                  | ~393,200       | Small vs 5M limit |
 
 Oxen and horse feed rates are set below the neighbor "good" thresholds to
 conserve wheat. At 70 and 55 respectively, nourishment still exceeds the
@@ -2421,6 +2423,75 @@ Manure per acre should be 3.5-7.0 for the neighbor "good" rating.
   lash them. Lashing boosts short-term output but causes sickness and death,
   creating a death spiral of declining labor, more lashing, and eventual
   revolt.
+
+### Proven Winning Strategy (Easy Mode, 37 Years)
+
+The following strategy has been validated by an automated simulation test
+(`easy_mode_sim_test.clj`) that builds the pyramid in 37 years on Easy
+difficulty with seed 42. It demonstrates a complete path from startup to
+victory.
+
+**Phase 1: Bootstrap (Months 1-12)**
+
+Start with the Easy-mode defaults (100 slaves, 50 oxen, 7 horses, 20,000
+wheat, 80 acres, loan 393,200). Borrow 200,000 gold operating capital.
+
+- Set overseers to `ceil(slaves / 15)`, minimum 7.
+- Farm 10 acres per month with 50 tons manure (5 tons/acre).
+- Sell wheat when stockpile > 15,000 and gold < 50,000.
+- Buy wheat scaled to population: when stockpile < `slaves * feed_rate * 2`,
+  buy up to `slaves * feed_rate * 3` bushels.
+- Buy manure (200 tons) when reserves drop below 100.
+- Do NOT build pyramid yet (quota = 0).
+- Do NOT sell slaves. Let population grow naturally (~14%/mo at health 1.0).
+- By month 12: ~488 slaves, 104 oxen, 15 horses, ~47,000 gold.
+
+**Phase 2: Build (Months 13-440)**
+
+- Set pyramid quota = 15 stones/month when sl-eff > 0.7 and slaves > 200
+  and wheat > 3,000. Reduce to 5 when sl-eff 0.5-0.7. Stop building
+  when sl-eff < 0.5 or wheat < 3,000.
+- Sell excess slaves above 800 (up to 200/month). This is the primary
+  income source: ~100 slaves/month at inflated prices.
+- Buy oxen to maintain ox/slave ratio ~0.3 (up to 20/month when gold
+  > 200,000). This keeps ox-mult at ~2.3x for work capacity.
+- Buy horses to maintain ~2 per overseer (up to 10/month when gold
+  > 200,000). This maximizes overseer effectiveness.
+- Continue farming 10 acres/month with manure spreading.
+- Buy wheat proportional to population (the critical fix: 900 slaves eat
+  9,000 wheat/month; buying only 5,000 causes starvation crashes).
+- Repay loan when gold > 200,000 (keep 100,000 reserve).
+
+**Key Metrics at Victory (Year 37, Month 9)**
+
+| Metric          | Value         |
+|-----------------|---------------|
+| Pyramid height  | 100.0 / 100.0 |
+| Stones placed   | 5,776         |
+| Net worth       | 2.36 billion  |
+| Slaves          | 898           |
+| Oxen            | 309           |
+| Horses          | 128           |
+| Gold            | 2.23 billion  |
+
+**Why This Strategy Works**
+
+1. **Population is the engine.** At 14%/mo birth rate, 100 slaves become
+   ~900 in 2 years. Excess slaves sold above 800 generate income that
+   scales with inflation.
+2. **Wheat buying must scale with population.** The most common failure
+   mode is starvation: 900 slaves eat 9,000 wheat/month, but fixed
+   purchases of 5,000 cause famine, health collapse, and death spirals.
+3. **Ox ratio drives capacity.** At ratio 0.3, ox-mult is ~2.3x vs 1.0x
+   with no oxen. This is the difference between sl-eff 1.0 and sl-eff 0.4.
+4. **Fixed quota of 15 is sustainable.** At height 80, 15 stones requires
+   15 x 80 x 12 = 14,400 man-hours. With 900 slaves at capacity ~27
+   hrs/slave, total capacity is ~24,300 hrs, leaving ~10,000 hrs for
+   farming. sl-eff stays above 0.7 at all heights.
+5. **Resilience to random events.** Plagues, acts-of-god, and gold events
+   periodically devastate the economy. The strategy recovers by buying
+   replacement slaves (when population < 200) and maintaining gold
+   reserves > 100,000.
 
 ---
 
