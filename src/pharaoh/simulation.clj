@@ -104,10 +104,9 @@
 
 (defn- apply-market [state rng]
   (let [inflation (ec/update-inflation rng (:inflation state))
-        update-p (fn [prices k]
-                   (update prices k #(ec/update-price rng % inflation)))
-        new-prices (reduce update-p (:prices state)
-                          [:wheat :land :horses :oxen :slaves :manure])
+        update-p (fn [state k]
+                   (update-in state [:prices k] #(ec/update-price rng % inflation)))
+        state (reduce update-p state [:wheat :land :horses :oxen :slaves :manure])
         ov-pay (* (:ov-pay state) (r/abs-gaussian rng (+ 1.0 inflation) 0.02))
         interest (* (:interest state) (r/abs-gaussian rng (+ 1.0 inflation) 0.02))
         update-commodity (fn [state k]
@@ -122,8 +121,7 @@
                                  (assoc-in [:production k] (:production result))
                                  (assoc-in [:prices k] (:price result)))))]
     (-> (reduce update-commodity state [:wheat :manure :slaves :horses :oxen :land])
-        (assoc :prices new-prices :inflation inflation
-               :ov-pay ov-pay :interest interest))))
+        (assoc :inflation inflation :ov-pay ov-pay :interest interest))))
 
 (defn- check-overseers-unpaid [state rng]
   (if (and (< (:gold state) 0) (> (:overseers state) 0.5))
@@ -171,7 +169,6 @@
 
 (defn run-month [rng state]
   (-> state
-      record-old
       advance-date
       (compute-workload rng)
       (compute-feeding rng)
@@ -180,11 +177,11 @@
       (apply-health rng)
       apply-pyramid
       apply-overseer-stress
+      (apply-market rng)
       (apply-costs rng)
       (process-contracts rng)
       (check-overseers-unpaid rng)
       apply-loan-interest
-      (apply-market rng)
       apply-credit-update
       check-emergency-loan
       update-net-worth

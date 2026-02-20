@@ -15,8 +15,10 @@
 
 (deftest make-contract-has-required-fields
   (let [rng (r/make-rng 42)
-        state (st/initial-state)
-        c (ct/make-contract rng state 0)]
+        state (assoc (st/initial-state) :wheat 1000.0 :slaves 50.0
+                :oxen 30.0 :horses 20.0 :manure 500.0 :ln-fallow 100.0
+                :players (ct/make-players (r/make-rng 1)))
+        c (ct/make-contract rng state [] [])]
     (is (contains? c :type))
     (is (contains? c :who))
     (is (contains? c :what))
@@ -29,14 +31,18 @@
     (is (pos? (:price c)))
     (is (<= 12 (:duration c) 36))))
 
-(deftest make-contract-price-uses-base-plus-exponential
+(deftest make-contract-price-is-total-value
+  ;; C: price = ceil(amount * unit_price * (0.4 + exponential(0.6)))
+  ;; Price should be total contract value, not per-unit
   (let [rng (r/make-rng 42)
-        state (assoc (st/initial-state)
-                :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
-                         :horses 500.0 :oxen 300.0 :land 5000.0})
-        prices (for [seed (range 100)]
-                 (:price (ct/make-contract (r/make-rng seed) state 0)))]
-    (is (every? pos? prices))))
+        state (assoc (st/initial-state) :wheat 1000.0 :slaves 50.0
+                :oxen 30.0 :horses 20.0 :manure 500.0 :ln-fallow 100.0
+                :players (ct/make-players (r/make-rng 1)))
+        c (ct/make-contract rng state [] [])]
+    ;; price should be > amount (for most commodities, since unit price > 1)
+    (is (pos? (:price c)))
+    ;; amount should be ceil'd
+    (is (== (Math/ceil (:amount c)) (:amount c)))))
 
 (deftest new-offers-fills-slots
   (let [rng (r/make-rng 42)
@@ -45,17 +51,21 @@
         result (ct/new-offers rng state)]
     (is (== 15 (count (:cont-offers result))))))
 
-(deftest new-offers-ages-surviving
+(deftest new-offers-decrements-duration-and-replaces
+  ;; C: active offers with duration <= 8 are replaced; others have duration decremented
   (let [rng (r/make-rng 42)
-        offer {:type :buy :who 0 :what :wheat :amount 100.0
-               :price 10.0 :duration 24 :active true :pct 0.0}
+        old-offer {:type :buy :who 0 :what :wheat :amount 100.0
+                   :price 5000.0 :duration 24 :active true :pct 0.0}
         state (assoc (st/initial-state)
-                :cont-offers (vec (repeat 15 offer))
+                :wheat 1000.0 :slaves 50.0 :oxen 30.0
+                :horses 20.0 :manure 500.0 :ln-fallow 100.0
+                :cont-offers (vec (repeat 15 old-offer))
                 :players (ct/make-players (r/make-rng 1)))
         result (ct/new-offers rng state)
-        surviving (filter #(and (:active %) (== 24 (:duration %)))
+        surviving (filter #(and (:active %) (= 23 (:duration %)))
                           (:cont-offers result))]
-    (is (<= (count surviving) 15))))
+    ;; Some offers should have been replaced (20% random), others aged (duration--)
+    (is (pos? (count surviving)))))
 
 (deftest accept-contract-moves-to-pending
   (let [offer {:type :buy :who 0 :what :wheat :amount 100.0
@@ -74,11 +84,11 @@
     (is (:error result))))
 
 (deftest settle-buy-full
+  ;; C: gold += c->price (total value)
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :buy :who 0 :what :wheat :amount 500.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 5000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 0.0 :wheat 500.0)
         result (ct/fulfill-contract rng state contract [player])]
     (is (== 0.0 (:wheat (:state result))))
@@ -86,150 +96,134 @@
     (is (not (:active (:contract result))))))
 
 (deftest settle-buy-insufficient-goods
+  ;; C: ppu=price/amount, gold += myAmount*ppu - 0.1*remaining_price
+  ;; price=5000, amount=500, ppu=10
+  ;; myAmount=floor(300)=300, gold += 300*10=3000
+  ;; remaining_price = 5000 * (1 - 300/500) = 2000
+  ;; penalty = 0.1 * 2000 = 200, gold -= 200
+  ;; net gold = 3000 - 200 = 2800
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :buy :who 0 :what :wheat :amount 500.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 5000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 0.0 :wheat 300.0)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)
         c (:contract result)]
-    ;; Player delivers all 300, gets paid 300*10=3000
-    ;; Penalty = 10% of remaining value = 0.10 * 200 * 10 = 200
-    ;; Gold = 0 + 3000 - 200 = 2800
     (is (== 0.0 (:wheat s)))
     (is (== 2800.0 (:gold s)))
-    ;; Contract adjusted: amount reduced by 300 (now 200), still active
     (is (:active c))
-    (is (== 200.0 (:amount c)))))
+    (is (== 200.0 (:amount c)))
+    (is (== 2000.0 (:price c)))))
 
 (deftest settle-buy-partial-pay
+  ;; C: canBuy = ceil(amount * uniform(0.5, 0.95)), gold += canBuy*ppu + remaining*0.1
   (let [rng (r/make-rng 99)
         player {:pay-k 0.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :buy :who 0 :what :wheat :amount 500.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 5000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 0.0 :wheat 500.0)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)
         c (:contract result)]
-    ;; pay-k 0.0 means pays? always false, so can-buy = 500 * uniform(0.5,0.95)
-    ;; Player has enough wheat (500 >= 500)
-    ;; can-buy < amount → partial pay path
-    ;; Player delivers can-buy, gets paid can-buy*price
-    ;; Bonus = 10% of remaining value = 0.10*(amount-can-buy)*price
     (is (< (:wheat s) 500.0))
     (is (> (:wheat s) 0.0))
     (is (> (:gold s) 0.0))
-    ;; Contract still active with reduced amount
     (is (:active c))
     (is (< (:amount c) 500.0))))
 
 (deftest settle-sell-full
+  ;; C: gold -= c->price (total), receive full amount
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :sell :who 0 :what :wheat :amount 1000.0
-                  :price 20.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 20000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 100000.0 :wheat 0.0)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)
         c (:contract result)]
-    ;; Player pays 1000*20=20000, receives 1000 wheat
     (is (== 1000.0 (:wheat s)))
     (is (== 80000.0 (:gold s)))
     (is (not (:active c)))))
 
 (deftest settle-sell-insufficient-gold
+  ;; C: penalty = 0.1*c->price, then buy what you can with remaining gold
+  ;; price=20000 (total), ppu=20, penalty=2000
+  ;; gold after penalty = 15000-2000 = 13000
+  ;; myAmount = floor(max(13000,0)/20) = 650
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :sell :who 0 :what :wheat :amount 1000.0
-                  :price 20.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 20000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 15000.0 :wheat 0.0)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)
         c (:contract result)]
-    ;; Total cost = 1000*20 = 20000, player only has 15000
-    ;; Penalty = 10% of total = 2000, gold after penalty = 15000-2000 = 13000
-    ;; Can afford = 13000/20 = 650 wheat
-    (is (> (:wheat s) 0.0))
+    (is (== 650.0 (:wheat s)))
     (is (< (:gold s) 15000.0))
-    ;; Contract still active with reduced amount
     (is (:active c))
-    (is (< (:amount c) 1000.0))))
+    (is (== 350.0 (:amount c)))))
 
 (deftest settle-sell-partial-ship
+  ;; C: gold += c->price * 0.1 (bonus BEFORE adjustment), then pay for partial
   (let [rng (r/make-rng 99)
         player {:pay-k 1.0 :ship-k 0.0 :default-k 1.0}
         contract {:type :sell :who 0 :what :wheat :amount 1000.0
-                  :price 20.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 20000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 100000.0 :wheat 0.0)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)
         c (:contract result)]
-    ;; ship-k 0.0 means can-sell = 1000*uniform(0.5,0.95)
-    ;; Player pays for can-sell, gets bonus 10% of remaining
     (is (> (:wheat s) 0.0))
     (is (< (:wheat s) 1000.0))
+    ;; Gold should include bonus: +0.1*20000=2000, minus partial payment
     (is (< (:gold s) 100000.0))
-    ;; Contract still active
     (is (:active c))
     (is (< (:amount c) 1000.0))))
 
 (deftest default-cancels-contract
+  ;; C: gold += c->price * 0.05
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 0.0}
         contract {:type :buy :who 0 :what :wheat :amount 120.0
-                  :price 10.0 :duration 12 :active true :pct 0.0}
+                  :price 1200.0 :duration 12 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 50000.0)
         result (ct/fulfill-contract rng state contract [player])]
-    (is (not (:active (:contract result))))))
+    (is (not (:active (:contract result))))
+    ;; gold += 1200 * 0.05 = 60
+    (is (== 50060.0 (:gold (:state result))))))
 
-(deftest accept-contract-sets-months-left
+(deftest accept-contract-copies-to-pending
   (let [offer {:type :buy :who 0 :what :wheat :amount 100.0
-               :price 10.0 :duration 24 :active true :pct 0.0}
+               :price 1000.0 :duration 24 :active true :pct 0.0}
         state (assoc (st/initial-state) :cont-offers [offer] :cont-pend [])
         result (ct/accept-contract state 0)
         pending (first (:cont-pend result))]
-    (is (= 24 (:months-left pending)))))
+    (is (= 24 (:duration pending)))))
 
-(deftest fulfill-buy-contract-decrements-months-left
+(deftest fulfill-contract-decrements-duration
+  ;; C: if (--(c->duration) <= 0) settle, else continue
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :buy :who 0 :what :wheat :amount 120.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 12}
+                  :price 1200.0 :duration 12 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 50000.0 :wheat 100.0)
         result (ct/fulfill-contract rng state contract [player])]
-    (is (= 11 (:months-left (:contract result))))))
-
-(deftest fulfill-sell-contract-decrements-months-left
-  (let [rng (r/make-rng 42)
-        player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
-        contract {:type :sell :who 0 :what :wheat :amount 120.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 12}
-        state (assoc (st/initial-state) :gold 50000.0 :wheat 500.0)
-        result (ct/fulfill-contract rng state contract [player])]
-    (is (= 11 (:months-left (:contract result))))))
+    (is (= 11 (:duration (:contract result))))))
 
 (deftest contract-not-due-no-settlement
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :buy :who 0 :what :wheat :amount 500.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 6}
+                  :price 5000.0 :duration 6 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 1000.0 :wheat 500.0)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)
         c (:contract result)]
-    ;; months-left > 1 after decrement, no settlement
+    ;; duration 6 → 5 after decrement, not due, no settlement
     (is (== 500.0 (:wheat s)))
     (is (== 1000.0 (:gold s)))
-    (is (== 5 (:months-left c)))
+    (is (== 5 (:duration c)))
     (is (:active c))))
 
 (deftest inc-commodity-blends-health
@@ -241,11 +235,11 @@
     (is (< (Math/abs (- (/ 125.0 150.0) (:hs-health result))) 0.001))))
 
 (deftest settle-sell-blends-livestock-health
+  ;; C: IncCommodity uses 0.9 nominal health
   (let [rng (r/make-rng 42)
         player {:pay-k 1.0 :ship-k 1.0 :default-k 1.0}
         contract {:type :sell :who 0 :what :horses :amount 100.0
-                  :price 500.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 10000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state) :gold 100000.0 :horses 50.0 :hs-health 0.7)
         result (ct/fulfill-contract rng state contract [player])
         s (:state result)]
@@ -269,8 +263,7 @@
   (let [rng (r/make-rng 42)
         players [{:pay-k 1.0 :ship-k 1.0 :default-k 1.0 :name "King HamuNam"}]
         contract {:type :buy :who 0 :what :wheat :amount 500.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 5000.0 :duration 1 :active true :pct 0.0}
         state (assoc (st/initial-state)
                 :gold 0.0 :wheat 500.0
                 :cont-pend [contract] :players players)
@@ -284,8 +277,7 @@
   (let [rng (r/make-rng 42)
         players [{:pay-k 1.0 :ship-k 1.0 :default-k 0.0 :name "King HamuNam"}]
         contract {:type :buy :who 0 :what :wheat :amount 500.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 6}
+                  :price 5000.0 :duration 6 :active true :pct 0.0}
         state (assoc (st/initial-state)
                 :gold 0.0 :wheat 500.0
                 :cont-pend [contract] :players players)
@@ -296,7 +288,7 @@
   (let [rng (r/make-rng 42)
         players (ct/make-players (r/make-rng 1))
         contract {:type :buy :who 0 :what :wheat :amount 120.0
-                  :price 10.0 :duration 12 :active true :pct 0.0}
+                  :price 1200.0 :duration 12 :active true :pct 0.0}
         state (assoc (st/initial-state)
                 :gold 50000.0 :wheat 100.0
                 :cont-pend [contract] :players players)

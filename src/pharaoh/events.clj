@@ -46,7 +46,7 @@
   (let [k-ln (factor-fn rng) k-gr (factor-fn rng) k-sw (factor-fn rng)
         k-rp (factor-fn rng)]
     (-> state
-        (update :ln-fallow * (factor-fn rng))
+        (update :ln-fallow * k-ln)
         (update :ln-grown * k-gr) (update :wt-grown * k-gr)
         (update :ln-sewn * k-sw) (update :wt-sewn * k-sw)
         (update :ln-ripe * k-rp) (update :wt-ripe * k-rp)
@@ -85,7 +85,7 @@
                        (r/abs-gaussian rng 1.0 0.2)) 1.0)
         my-dice (* my-army (r/abs-gaussian rng 1.0 0.3))
         his-dice (* his-army (r/abs-gaussian rng 1.0 0.3))
-        gain (if (< his-dice 0.001) 1.0 (/ my-dice his-dice))
+        gain (if (< his-dice 0.001) 0.0 (/ my-dice his-dice))
         max-gain (/ (+ his-army my-army) my-army)
         gain (min gain max-gain)
         apply-gain (fn [rng s k]

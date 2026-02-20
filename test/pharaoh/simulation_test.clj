@@ -16,7 +16,7 @@
       :ln-fallow 100.0 :sl-feed-rt 8.0
       :ox-feed-rt 60.0 :hs-feed-rt 50.0
       :ln-to-sew 20.0 :mn-to-sprd 5.0
-      :overseers 3.0 :ov-pay 100.0
+      :overseers 3.0 :ov-pay 300.0
       :py-quota 10.0
       :players (ct/make-players rng))))
 
@@ -27,13 +27,15 @@
     (is (or (and (== 2 (:month result)) (== 1 (:year result)))
             (and (== 1 (:month result)) (== 2 (:year result)))))))
 
-(deftest run-month-records-old-values
+(deftest run-month-does-not-record-old
+  ;; record-old is called in do-run, not run-month (matches C)
   (let [rng (r/make-rng 42)
         state (game-state)
         result (sim/run-month rng state)]
-    (is (== 100000.0 (:old-gold result)))
-    (is (== 5000.0 (:old-wheat result)))
-    (is (== 50.0 (:old-slaves result)))))
+    ;; old values should be unchanged from initial (0.0)
+    (is (== 0.0 (:old-gold result)))
+    (is (== 0.0 (:old-wheat result)))
+    (is (== 0.0 (:old-slaves result)))))
 
 (deftest run-month-modifies-gold
   (let [rng (r/make-rng 42)
@@ -173,10 +175,13 @@
     (is (not (clojure.string/blank? (:text msg))))))
 
 (deftest debt-warning-sets-banker-message
+  ;; debt-support at credit-rating=0.8: interpolate(0.8, [0,...,3.0]) ≈ 1.7
+  ;; debt-warning triggers at 80% of limit = 1.36
+  ;; game-state NW ≈ 3M. Need loan/NW > 1.36 → loan > 4.08M
   (let [rng (r/make-rng 42)
         state (assoc (game-state)
-                :loan 2800000.0 :credit-rating 0.8
-                :gold 2000000.0)
+                :loan 4500000.0 :credit-rating 0.8
+                :gold 2000000.0 :credit-limit 1e7)
         result (sim/run-month rng state)]
     (is (not (:game-over result)) "Should not trigger foreclosure")
     (is (map? (:message result)))
@@ -185,13 +190,17 @@
     (is (= (:banker state) (:face (:message result))))))
 
 (deftest foreclosure-sets-banker-message
+  ;; debt-support at credit-rating=0.1: ≈ 0.5
+  ;; Need loan/NW > 0.5 with positive NW; give enough gold to stay positive
+  ;; after costs so emergency loan doesn't fire first
   (let [rng (r/make-rng 42)
         state (assoc (game-state)
-                :loan 100000.0 :credit-rating 0.3
-                :gold 100.0 :wheat 0.0 :slaves 0.0
+                :loan 500000.0 :credit-rating 0.1
+                :gold 50000.0 :wheat 0.0 :slaves 0.0
                 :oxen 0.0 :horses 0.0 :manure 0.0
                 :ln-fallow 0.0 :ln-sewn 0.0
-                :ln-grown 0.0 :ln-ripe 0.0)
+                :ln-grown 0.0 :ln-ripe 0.0
+                :overseers 0.0 :credit-limit 1e7)
         result (sim/run-month rng state)]
     (is (:game-over result))
     (is (map? (:message result)))
@@ -203,8 +212,7 @@
   (let [rng (r/make-rng 42) ;; seed 42 = no event
         players [{:pay-k 1.0 :ship-k 1.0 :default-k 1.0 :name "King HamuNam"}]
         contract {:type :buy :who 0 :what :wheat :amount 100.0
-                  :price 10.0 :duration 12 :active true :pct 0.0
-                  :months-left 1}
+                  :price 1000.0 :duration 1 :active true :pct 0.0}
         state (assoc (game-state)
                 :players players
                 :cont-pend [contract]

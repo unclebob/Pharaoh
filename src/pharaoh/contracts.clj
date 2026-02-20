@@ -39,62 +39,67 @@
             (assoc h-ptr new-h)))
       (update state ptr + added))))
 
-(defn make-contract [rng state who]
-  (let [what (commodities (long (r/uniform rng 0 5.999)))
-        base-price (get-in state [:prices what] 100.0)
-        price (* base-price (+ 0.4 (r/exponential rng 0.6)))
-        typ (if (< (r/uniform rng 0 1) 0.5) :buy :sell)
-        amount (max 1.0 (r/exponential rng (* 10.0 (+ 1.0 (r/uniform rng 0 2)))))
-        duration (long (r/uniform rng 12 36))]
-    {:type typ :who who :what what :amount amount
-     :price price :duration duration :active true :pct 0.0}))
+;; C: AlreadyTrading checks both contOffers and contPend arrays
+(defn- already-trading? [offers pending who what]
+  (or (some #(and (== (:who %) who) (= (:what %) what)) offers)
+      (some #(and (== (:who %) who) (= (:what %) what)) pending)))
 
-(defn- already-trading? [offers who what]
-  (some #(and (:active %) (== (:who %) who) (= (:what %) what)) offers))
+;; C: MakeContract — amount from stock, price is total contract value
+(defn make-contract [rng state offers pending]
+  (let [n-players (count (:players state))
+        max-combos (* n-players (count commodities))]
+    (loop [tries 0]
+      (if (>= tries max-combos)
+        nil
+      (let [who (long (r/uniform rng 0.0 (- n-players 0.01)))
+            what (commodities (long (r/uniform rng 0 5.999)))]
+        (if (already-trading? offers pending who what)
+          (recur (inc tries))
+          (let [typ (if (< (r/uniform rng 0.0 1.0) 0.5) :buy :sell)
+                ptr (commodity-ptr what)
+                stock (get state ptr 0.0)
+                unit-price (get-in state [:prices what] 100.0)
+                min-amount (/ 200000.0 unit-price)
+                working (r/gaussian rng (* stock 6.0) (* stock 2.0))
+                amount (Math/ceil (max working min-amount))
+                price (Math/ceil (* amount unit-price
+                                    (+ 0.4 (r/exponential rng 0.6))))
+                duration (long (r/uniform rng 12.0 36.0))]
+            {:type typ :who who :what what :amount amount
+             :price price :duration duration :active true :pct 0.0})))))))
 
-(defn- age-offer [rng offer]
-  (if (not (:active offer))
-    offer
-    (let [pct (r/uniform rng 0.01 0.10)]
-      (if (= :buy (:type offer))
-        (update offer :price * (+ 1.0 pct))
-        (update offer :price * (- 1.0 pct))))))
-
+;; C: NewOffers — slot-by-slot: replace if duration<=8 or 20% random, else age
 (defn new-offers [rng state]
-  (let [players (:players state)
-        offers (:cont-offers state)
-        aged (mapv (partial age-offer rng) offers)
-        n-existing (count (filter :active aged))
-        n-needed (- max-offers n-existing)
-        new-contracts
-        (loop [acc [] tries 0]
-          (if (or (>= (count acc) n-needed) (> tries (* n-needed 3)))
-            acc
-            (let [who (long (r/uniform rng 0 (dec (count players))))
-                  c (make-contract rng state who)
-                  all-offers (concat aged acc)]
-              (if (already-trading? all-offers who (:what c))
-                (recur acc (inc tries))
-                (recur (conj acc c) (inc tries))))))
-        ;; Replace inactive slots with new contracts
-        result (loop [offers aged new-list new-contracts]
-                 (if (empty? new-list)
-                   offers
-                   (let [idx (first (keep-indexed
-                                     (fn [i o] (when (not (:active o)) i))
-                                     offers))]
-                     (if idx
-                       (recur (assoc offers idx (first new-list))
-                              (rest new-list))
-                       ;; Append if no inactive slots
-                       (into offers new-list)))))]
+  (if (empty? (:players state))
+    state
+  (let [pending (:cont-pend state)
+        init-offers (let [o (or (:cont-offers state) [])]
+                      (vec (take max-offers
+                                 (concat o (repeat (- max-offers (count o))
+                                                   {:active false :who -1 :what nil})))))]
     (assoc state :cont-offers
-           (vec (take max-offers
-                      (if (< (count result) max-offers)
-                        (into result (repeat (- max-offers (count result))
-                                            {:active false}))
-                        result))))))
+           (loop [i 0 offers init-offers]
+             (if (>= i max-offers)
+               offers
+               (let [offer (nth offers i)]
+                 (if (:active offer)
+                   (if (or (<= (:duration offer) 8)
+                           (< (r/uniform rng 0.0 1.0) 0.2))
+                     (let [temp (assoc offers i {:active false :who -1 :what nil})
+                           c (make-contract rng state temp pending)]
+                       (recur (inc i) (assoc offers i (or c offer))))
+                     (let [drift (if (= :buy (:type offer))
+                                  (r/uniform rng 1.01 1.1)
+                                  (r/uniform rng 0.90 0.99))]
+                       (recur (inc i)
+                              (assoc offers i (-> offer
+                                                  (update :duration dec)
+                                                  (update :price * drift))))))
+                   (let [c (make-contract rng state offers pending)]
+                     (recur (inc i) (if c (assoc offers i c) offers)))))))))))
 
+
+;; C: movmem(c, &contPend[i]) — just copy the offer to pending
 (defn accept-contract [state offer-idx]
   (if (>= (count (filter :active (:cont-pend state))) max-pend)
     {:error "Maximum pending contracts reached"}
@@ -104,8 +109,7 @@
         (-> state
             (update :cont-offers assoc offer-idx
                     (assoc offer :active false))
-            (update :cont-pend conj
-                    (assoc offer :months-left (:duration offer))))))))
+            (update :cont-pend conj offer))))))
 
 (defn contract-msg [contract players pool-msg]
   (let [name (get-in players [(:who contract)] {:name "Unknown"})
@@ -114,76 +118,87 @@
          " for " (long (:amount contract)) " " (clojure.core/name (:what contract))
          ": " pool-msg)))
 
+;; C: ContProg BUY settlement — ppu = price/amount, C-exact math
 (defn- settle-buy [rng state contract player]
   (let [ptr (commodity-ptr (:what contract))
         amount (:amount contract)
         price (:price contract)
+        ppu (/ price amount)
         pays? (< (r/uniform rng 0 1) (:pay-k player))
-        can-buy (if pays? amount (* amount (r/uniform rng 0.5 0.95)))
-        available (get state ptr 0.0)]
+        can-buy (if pays? amount (Math/ceil (* amount (r/uniform rng 0.5 0.95))))
+        my-amount (Math/floor (get state ptr 0.0))]
     (cond
-      (< available amount)
-      (let [paid (* available price)
-            penalty (* 0.10 (* (- amount available) price))]
-        {:state (-> state (assoc ptr 0.0) (update :gold + paid (- penalty)))
-         :contract (-> contract (update :amount - available) (assoc :months-left 1))
+      (< my-amount can-buy)
+      (let [new-price (* price (- 1.0 (/ my-amount amount)))
+            new-amount (- amount my-amount)]
+        {:state (-> state (assoc ptr 0.0)
+                    (update :gold + (* my-amount ppu))
+                    (update :gold - (* 0.1 new-price)))
+         :contract (assoc contract :price new-price :amount new-amount)
          :msg-pool msg/contract-insufficient-goods-messages})
 
       (< can-buy amount)
-      (let [paid (* can-buy price)
-            bonus (* 0.10 (* (- amount can-buy) price))]
-        {:state (-> state (update ptr - can-buy) (update :gold + paid bonus))
-         :contract (-> contract (update :amount - can-buy) (assoc :months-left 1))
+      (let [new-price (* price (- 1.0 (/ can-buy amount)))
+            new-amount (- amount can-buy)]
+        {:state (-> state (update ptr - can-buy)
+                    (update :gold + (* can-buy ppu) (* 0.1 new-price)))
+         :contract (assoc contract :price new-price :amount new-amount)
          :msg-pool msg/contract-partial-pay-messages})
 
       :else
-      (let [total (* price amount)]
-        {:state (-> state (update ptr - amount) (update :gold + total))
-         :contract (assoc contract :active false)
-         :msg-pool msg/buy-complete-messages}))))
+      {:state (-> state (update ptr - can-buy) (update :gold + price))
+       :contract (assoc contract :active false)
+       :msg-pool msg/buy-complete-messages})))
 
+;; C: ContProg SELL settlement — ppu = price/amount, C-exact math
 (defn- settle-sell [rng state contract player]
   (let [what (:what contract)
         amount (:amount contract)
         price (:price contract)
-        total (* price amount)
+        ppu (/ price amount)
         gold (:gold state)
         ships? (< (r/uniform rng 0 1) (:ship-k player))
-        can-sell (if ships? amount (* amount (r/uniform rng 0.5 0.95)))]
+        can-sell (if ships? amount (Math/ceil (* amount (r/uniform rng 0.5 0.95))))
+        sell-price (* can-sell ppu)]
     (cond
-      (< gold total)
-      (let [penalty (* 0.10 total)
-            gold-left (- gold penalty)
-            can-afford (max 0.0 (/ gold-left price))]
-        {:state (-> state (inc-commodity what can-afford)
-                    (update :gold - (* can-afford price) penalty))
-         :contract (-> contract (update :amount - can-afford) (assoc :months-left 1))
+      (< gold sell-price)
+      (let [gold-after (- gold (* price 0.1))
+            my-amount (Math/floor (/ (max gold-after 0.0) ppu))
+            new-price (* price (- 1.0 (/ my-amount amount)))
+            new-amount (- amount my-amount)]
+        {:state (-> state
+                    (inc-commodity what my-amount)
+                    (assoc :gold (- gold-after (* my-amount ppu))))
+         :contract (assoc contract :price new-price :amount new-amount)
          :msg-pool msg/contract-insufficient-funds-messages})
 
       (< can-sell amount)
-      (let [paid (* can-sell price)
-            bonus (* 0.10 (* (- amount can-sell) price))]
-        {:state (-> state (inc-commodity what can-sell)
-                    (update :gold - paid (- bonus)))
-         :contract (-> contract (update :amount - can-sell) (assoc :months-left 1))
+      (let [new-price (* price (- 1.0 (/ can-sell amount)))
+            new-amount (- amount can-sell)]
+        {:state (-> state
+                    (update :gold + (* price 0.1))
+                    (update :gold - (* can-sell ppu))
+                    (inc-commodity what can-sell))
+         :contract (assoc contract :price new-price :amount new-amount)
          :msg-pool msg/contract-partial-ship-messages})
 
       :else
-      {:state (-> state (inc-commodity what amount) (update :gold - total))
+      {:state (-> state (inc-commodity what amount)
+                  (update :gold - price))
        :contract (assoc contract :active false)
        :msg-pool msg/contract-complete-messages})))
 
+;; C: ContProg — default check, then --duration <= 0 triggers settlement
 (defn fulfill-contract [rng state contract players]
   (let [player (get players (:who contract))
         defaults? (< (r/uniform rng 0 1) (- 1.0 (:default-k player)))]
     (if defaults?
-      (let [penalty (* (:amount contract) (:price contract) 0.05)]
-        {:state (update state :gold + penalty)
-         :contract (assoc contract :active false)
-         :msg-pool msg/contract-default-messages})
-      (let [ml (or (:months-left contract) (:duration contract))
-            contract (assoc contract :months-left (dec ml))]
-        (if (<= (:months-left contract) 0)
+      {:state (update state :gold + (* (:price contract) 0.05))
+       :contract (assoc contract :active false)
+       :msg-pool msg/contract-default-messages}
+      (let [dur (dec (:duration contract))
+            contract (assoc contract :duration dur)]
+        (if (<= dur 0)
           (if (= :buy (:type contract))
             (settle-buy rng state contract player)
             (settle-sell rng state contract player))

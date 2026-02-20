@@ -76,11 +76,14 @@
     (is (:error result))))
 
 (deftest monthly-interest-deducted
+  ;; C: gold -= loan * (interest + intAddition) / 100
+  ;; interest=0.5, intAddition=0.2 → rate=0.7/100=0.007
+  ;; payment = 100000 * 0.007 = 700
   (let [state (assoc (st/initial-state)
                 :loan 100000.0 :gold 50000.0
-                :interest 5.0 :int-addition 2.0)
+                :interest 0.5 :int-addition 0.2)
         result (ln/deduct-interest state)]
-    (is (< (Math/abs (- (:gold result) (- 50000.0 (/ (* 100000.0 7.0) 1200.0)))) 0.01))))
+    (is (< (Math/abs (- (:gold result) (- 50000.0 (* 100000.0 (/ 0.7 100.0))))) 0.01))))
 
 (deftest credit-decays-with-loan
   (let [state (assoc (st/initial-state)
@@ -107,6 +110,14 @@
     (is (< (:credit-rating result) 0.8))
     (is (> (:int-addition result) 0.5))))
 
+(deftest emergency-loan-denied-over-credit-limit
+  ;; C: emergency loan calls Loan() which checks credit limit
+  (let [state (assoc (st/initial-state)
+                :gold -5000.0 :loan 49000.0
+                :credit-limit 50000.0)
+        result (ln/emergency-loan state)]
+    (is (true? (:game-over result)))))
+
 (deftest no-emergency-when-gold-positive
   (let [state (assoc (st/initial-state) :gold 5000.0 :loan 0.0)
         result (ln/emergency-loan state)]
@@ -117,9 +128,19 @@
                 :loan 500000.0 :credit-rating 0.1
                 :gold 1000.0 :slaves 0.0 :oxen 0.0 :horses 0.0
                 :ln-fallow 0.0 :wheat 0.0 :manure 0.0
-                :prices {:wheat 10.0 :manure 5.0 :slaves 1000.0
-                         :horses 500.0 :oxen 300.0 :land 5000.0})]
+                :prices {:wheat 2.0 :manure 20.0 :slaves 500.0
+                         :horses 100.0 :oxen 90.0 :land 10000.0})]
     (is (true? (ln/foreclosed? state)))))
+
+(deftest foreclosure-safe-at-zero-net-worth
+  ;; C: debt_asset = (netWth ? loan/netWth : 0) — 0 is safe
+  (let [state (assoc (st/initial-state)
+                :loan 10000.0 :credit-rating 0.5
+                :gold 0.0 :slaves 0.0 :oxen 0.0 :horses 0.0
+                :ln-fallow 0.0 :wheat 0.0 :manure 0.0
+                :prices {:wheat 2.0 :manure 20.0 :slaves 500.0
+                         :horses 100.0 :oxen 90.0 :land 10000.0})]
+    (is (false? (ln/foreclosed? state)))))
 
 (deftest no-foreclosure-with-assets
   (let [state (assoc (st/initial-state)

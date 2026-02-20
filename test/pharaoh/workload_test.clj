@@ -33,9 +33,14 @@
     (is (== 0.8 (:sl-eff result)))
     (is (== 800.0 (:tot-wk result)))))
 
-(deftest efficiency-handles-zero-slaves
-  (let [result (wk/compute-efficiency 0 0 1000.0)]
+(deftest efficiency-handles-zero-slaves-no-work
+  (let [result (wk/compute-efficiency 0 0 0)]
     (is (== 1.0 (:sl-eff result)))))
+
+(deftest efficiency-zero-slaves-with-work
+  ;; C: slEff = reqWk ? totWk/reqWk : 1 → 0/1000 = 0
+  (let [result (wk/compute-efficiency 0 0 1000.0)]
+    (is (== 0.0 (:sl-eff result)))))
 
 (deftest work-deficit-when-overloaded
   (let [result (wk/compute-efficiency 100 8.0 1200.0)]

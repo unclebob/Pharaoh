@@ -66,13 +66,25 @@
         health (if hk (get state hk 1.0) 1.0)
         revenue (* amount price (if hk health 1.0))
         crop-key (get crop-keys ck)
-        state (-> state
-                (update ck - amount)
+        owned-before (get state ck 0.0)
+        burn-fract (if (and crop-key (pos? owned-before))
+                     (/ amount owned-before) 0)
+        state (cond-> state
+                crop-key (update crop-key * (- 1.0 burn-fract)))]
+    (-> state
+        (update ck - amount)
+        (update :gold + revenue)
+        (update-in [:supply commodity] + amount))))
+
+(defn sell-land [rng state land-key amount]
+  (let [price (get-in state [:prices :land])
+        crop-key (get crop-keys land-key)
+        owned-before (get state land-key 0.0)
+        burn-fract (if (and crop-key (pos? owned-before))
+                     (/ amount owned-before) 0)
+        revenue (* amount price)]
+    (cond-> (-> state
+                (update land-key - amount)
                 (update :gold + revenue)
-                (update-in [:supply commodity] + amount))]
-    (if (and crop-key (< amount 0))
-      ;; selling land with crops
-      (let [owned (+ (get state ck) amount)
-            burn-fract (if (> owned 0) (/ (- amount) owned) 0)]
-        (update state crop-key * (- 1 burn-fract)))
-      state)))
+                (update-in [:supply :land] + amount))
+      crop-key (update crop-key * (- 1.0 burn-fract)))))

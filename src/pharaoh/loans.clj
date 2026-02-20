@@ -65,7 +65,7 @@
 
 (defn deduct-interest [state]
   (let [monthly-rate (/ (+ (:interest state) (:int-addition state))
-                        1200.0)
+                        100.0)
         payment (* (:loan state) monthly-rate)]
     (update state :gold - payment)))
 
@@ -84,18 +84,20 @@
     state
     (let [deficit (Math/abs (:gold state))
           em-loan (* deficit 1.1)]
-      (-> state
-          (update :gold + em-loan)
-          (update :loan + em-loan)
-          (update :credit-rating
-                  (fn [cr] (- cr (/ (- 1.0 cr) 3.0))))
-          (update :int-addition + 0.2)))))
+      (if (> (+ (:loan state) em-loan) (:credit-limit state))
+        (assoc state :game-over true)
+        (-> state
+            (update :gold + em-loan)
+            (update :loan + em-loan)
+            (update :credit-rating
+                    (fn [cr] (- cr (/ (- 1.0 cr) 3.0))))
+            (update :int-addition + 0.2))))))
 
 (defn foreclosed? [state]
   (if (<= (:loan state) 0)
     false
     (let [nw (ec/net-worth state)
-          debt-asset (if (pos? nw) (/ (:loan state) nw) 100.0)
+          debt-asset (if (pos? nw) (/ (:loan state) nw) 0)
           limit (t/interpolate (:credit-rating state) t/debt-support)]
       (> debt-asset limit))))
 
@@ -103,6 +105,6 @@
   (if (<= (:loan state) 0)
     false
     (let [nw (ec/net-worth state)
-          debt-asset (if (pos? nw) (/ (:loan state) nw) 100.0)
+          debt-asset (if (pos? nw) (/ (:loan state) nw) 0)
           limit (t/interpolate (:credit-rating state) t/debt-support)]
       (> debt-asset (* limit 0.8)))))

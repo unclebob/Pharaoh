@@ -101,14 +101,38 @@
     (is (> (:sl-health result) 0.7))
     (is (< (:sl-health result) 0.9))))
 
-(deftest sell-land-burns-crops
+(deftest sell-fallow-land-no-crop-burn
   (let [state (assoc (st/initial-state)
-                :gold 0.0 :ln-fallow 100.0 :wt-sewn 200.0
-                :prices (assoc (:prices (st/initial-state)) :land 5000.0)
+                :gold 0.0 :ln-fallow 100.0
+                :prices (assoc (:prices (st/initial-state)) :land 10000.0)
                 :supply (assoc (:supply (st/initial-state)) :land 0.0)
                 :demand (assoc (:demand (st/initial-state)) :land 10000.0))
         rng (r/make-rng 42)
-        ;; sell doesn't use crop-burn logic for fallow land (crop-key nil for :ln-fallow)
         result (tr/sell rng state :land 50.0)]
-    (is (= (:ln-fallow result) 50.0))
+    (is (== 50.0 (:ln-fallow result)))
+    (is (> (:gold result) 0))))
+
+(deftest sell-sewn-land-burns-crops
+  ;; C: selling sewn land burns proportional wheat
+  (let [state (assoc (st/initial-state)
+                :gold 0.0 :ln-sewn 100.0 :wt-sewn 500.0
+                :prices (assoc (:prices (st/initial-state)) :land 10000.0)
+                :supply (assoc (:supply (st/initial-state)) :land 0.0)
+                :demand (assoc (:demand (st/initial-state)) :land 10000.0))
+        rng (r/make-rng 42)
+        result (tr/sell-land rng state :ln-sewn 50.0)]
+    (is (== 50.0 (:ln-sewn result)))
+    (is (== 250.0 (:wt-sewn result)))     ; 50% of land sold → 50% of crops burned
+    (is (> (:gold result) 0))))
+
+(deftest sell-grown-land-burns-crops
+  (let [state (assoc (st/initial-state)
+                :gold 0.0 :ln-grown 80.0 :wt-grown 400.0
+                :prices (assoc (:prices (st/initial-state)) :land 10000.0)
+                :supply (assoc (:supply (st/initial-state)) :land 0.0)
+                :demand (assoc (:demand (st/initial-state)) :land 10000.0))
+        rng (r/make-rng 42)
+        result (tr/sell-land rng state :ln-grown 20.0)]
+    (is (== 60.0 (:ln-grown result)))
+    (is (== 300.0 (:wt-grown result)))    ; 25% of land sold → 25% of crops burned
     (is (> (:gold result) 0))))

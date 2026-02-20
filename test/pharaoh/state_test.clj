@@ -12,9 +12,9 @@
     (is (== 0.0 (:oxen s)))
     (is (== 0.0 (:horses s)))
     (is (== 0.0 (:manure s)))
-    (is (== 0.8 (:sl-health s)))
-    (is (== 0.8 (:ox-health s)))
-    (is (== 0.8 (:hs-health s)))
+    (is (== 1.0 (:sl-health s)))
+    (is (== 1.0 (:ox-health s)))
+    (is (== 1.0 (:hs-health s)))
     (is (== 0.0 (:loan s)))
     (is (== 1.0 (:credit-rating s)))
     (is (== 0.0 (:py-stones s)))
@@ -22,21 +22,46 @@
     (is (false? (:game-over s)))
     (is (false? (:game-won s)))))
 
-(deftest initial-state-has-prices
-  (let [p (:prices (st/initial-state))]
-    (is (pos? (:wheat p)))
-    (is (pos? (:slaves p)))
-    (is (pos? (:horses p)))
-    (is (pos? (:oxen p)))
-    (is (pos? (:manure p)))
-    (is (pos? (:land p)))))
-
-(deftest initial-state-has-supply-and-demand
+(deftest initial-state-defaults-match-c
   (let [s (st/initial-state)]
-    (doseq [k [:wheat :slaves :horses :oxen :manure :land]]
-      (is (pos? (get-in s [:supply k])) (str k " supply"))
-      (is (pos? (get-in s [:demand k])) (str k " demand"))
-      (is (pos? (get-in s [:production k])) (str k " production")))))
+    (is (== 0.5 (:interest s)))
+    (is (== 0.001 (:inflation s)))
+    (is (== 0.05 (:wt-rot-rt s)))
+    (is (== 300.0 (:ov-pay s)))
+    (is (== 300.0 (:py-base s)))
+    (is (== 0.05 (:world-growth s)))
+    (is (== 50000.0 (:credit-limit s)))
+    (is (== 500000.0 (:credit-lower s)))))
+
+(deftest initial-state-prices-match-c
+  (let [p (:prices (st/initial-state))]
+    (is (== 2.0 (:wheat p)))
+    (is (== 500.0 (:slaves p)))
+    (is (== 100.0 (:horses p)))
+    (is (== 90.0 (:oxen p)))
+    (is (== 20.0 (:manure p)))
+    (is (== 10000.0 (:land p)))))
+
+(deftest initial-state-supply-demand-match-c
+  (let [s (st/initial-state)]
+    (is (== 1e6 (get-in s [:supply :wheat])))
+    (is (== 1e7 (get-in s [:demand :wheat])))
+    (is (== 1e7 (get-in s [:production :wheat])))
+    (is (== 1e3 (get-in s [:supply :slaves])))
+    (is (== 1e4 (get-in s [:demand :slaves])))
+    (is (== 1e4 (get-in s [:production :slaves])))
+    (is (== 1e4 (get-in s [:supply :horses])))
+    (is (== 1e5 (get-in s [:demand :horses])))
+    (is (== 1e5 (get-in s [:production :horses])))
+    (is (== 1e4 (get-in s [:supply :oxen])))
+    (is (== 1e5 (get-in s [:demand :oxen])))
+    (is (== 1e5 (get-in s [:production :oxen])))
+    (is (== 1e2 (get-in s [:supply :land])))
+    (is (== 1e3 (get-in s [:demand :land])))
+    (is (== 1e3 (get-in s [:production :land])))
+    (is (== 1e4 (get-in s [:supply :manure])))
+    (is (== 1e5 (get-in s [:demand :manure])))
+    (is (== 1e5 (get-in s [:production :manure])))))
 
 (deftest total-land-sums-all-stages
   (let [s (assoc (st/initial-state)
@@ -52,20 +77,27 @@
     (is (== 115.47 (:py-base s)))
     (is (== 5e6 (:credit-limit s)))
     (is (== 5e6 (:credit-lower s)))
-    (is (== 0.15 (:world-growth s)))))
+    (is (== 0.15 (:world-growth s)))
+    (is (== 1000.0 (get-in s [:prices :land])))
+    (is (== 10.0 (get-in s [:prices :wheat])))
+    (is (== 1000.0 (get-in s [:prices :slaves])))))
 
 (deftest set-difficulty-normal
   (let [s (st/set-difficulty (st/initial-state) "Normal")]
     (is (== 346.41 (:py-base s)))
     (is (== 5e5 (:credit-limit s)))
     (is (== 5e5 (:credit-lower s)))
-    (is (== 0.10 (:world-growth s)))))
+    (is (== 0.10 (:world-growth s)))
+    (is (== 5000.0 (get-in s [:prices :land])))
+    (is (== 8.0 (get-in s [:prices :wheat])))
+    (is (== 800.0 (get-in s [:prices :slaves])))))
 
 (deftest set-difficulty-hard
   (let [s (st/set-difficulty (st/initial-state) "Hard")]
     (is (== 1154.7 (:py-base s)))
-    (is (== 5e4 (:credit-limit s)))
-    (is (== 5e4 (:credit-lower s)))))
+    ;; C Hard only sets pyBase; credit uses defaults
+    (is (== 50000.0 (:credit-limit s)))
+    (is (== 500000.0 (:credit-lower s)))))
 
 (deftest set-difficulty-invalid-returns-unchanged
   (let [s (st/initial-state)

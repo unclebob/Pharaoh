@@ -90,8 +90,8 @@
                      (assoc-in [:state :players] players)
                      (assoc-in [:state :cont-pend]
                                [{:type :buy :active true :who 0 :what :wheat
-                                 :amount 100.0 :price 10.0 :duration 12
-                                 :pct 0.0 :months-left 6}]))))}
+                                 :amount 100.0 :price 1000.0 :duration 6
+                                 :pct 0.0}]))))}
 
    {:type :given :pattern #"there are (\d+) queued contract messages"
     :handler (fn [w n]
@@ -326,7 +326,9 @@
                      s (if (empty? (:players s))
                          (assoc s :players (ct/make-players (:rng w)))
                          s)
-                     c (ct/make-contract (:rng w) s 0)]
+                     c (ct/make-contract (:rng w) s
+                                         (or (:cont-offers s) [])
+                                         (or (:cont-pend s) []))]
                  (-> w
                      (assoc-in [:state :players] (:players s))
                      (assoc :contract c))))}
@@ -336,7 +338,7 @@
                      c {:type (keyword (str/lower-case typ))
                         :who 0 :what (keyword (str/lower-case what))
                         :amount (to-double amt) :price (to-double price)
-                        :duration (Integer/parseInt dur) :months-left (Integer/parseInt dur)
+                        :duration (Integer/parseInt dur)
                         :active true :pct 0.0}
                      s (:state w)
                      s (if (empty? (:players s))
@@ -356,7 +358,7 @@
                      c {:type (keyword (str/lower-case typ))
                         :who 0 :what k
                         :amount (to-double amt) :price (to-double price)
-                        :duration 1 :months-left 1 :active true :pct 0.0}]
+                        :duration 1 :active true :pct 0.0}]
                  (assoc w :state (-> s
                                      (update :cont-pend (fnil conj []) c)
                                      (assoc :gold 100000.0)))))}
@@ -371,7 +373,7 @@
                      c {:type (keyword (str/lower-case typ))
                         :who 0 :what k
                         :amount (to-double amt) :price 100.0
-                        :duration 1 :months-left 1 :active true :pct 0.0}]
+                        :duration 1 :active true :pct 0.0}]
                  (assoc w :state (-> s
                                      (update :cont-pend (fnil conj []) c)
                                      (assoc k (to-double amt))))))}
@@ -386,7 +388,7 @@
                      c {:type (keyword (str/lower-case typ))
                         :who 0 :what k
                         :amount (to-double amt) :price 100.0
-                        :duration 1 :months-left 1 :active true :pct 0.0}]
+                        :duration 1 :active true :pct 0.0}]
                  (assoc w :state (-> s
                                      (update :cont-pend (fnil conj []) c)
                                      (assoc k (to-double amt) :gold 100000.0)))))}
@@ -400,7 +402,7 @@
                      c {:type (keyword (str/lower-case typ))
                         :who 0 :what :wheat
                         :amount 500.0 :price 10000.0
-                        :duration 1 :months-left 1 :active true :pct 0.0}]
+                        :duration 1 :active true :pct 0.0}]
                  (assoc w :state (-> s
                                      (update :cont-pend (fnil conj []) c)
                                      (assoc :wheat 500.0 :gold 100000.0)))))}
@@ -413,7 +415,7 @@
                          s)
                      c {:type :buy :who 0 :what :wheat
                         :amount 500.0 :price 10000.0
-                        :duration 24 :months-left 24 :active true :pct 0.0}]
+                        :duration 24 :active true :pct 0.0}]
                  (assoc w :state (update s :cont-pend conj c))))}
    {:type :given :pattern #"an active (BUY|SELL) contract offer"
     :handler (fn [w typ]
@@ -437,7 +439,7 @@
                          s)
                      c {:type :buy :who 0 :what :wheat
                         :amount 500.0 :price 10000.0
-                        :duration 24 :months-left 24 :active true :pct 0.0
+                        :duration 24 :active true :pct 0.0
                         :defaulted true}]
                  (assoc w :state (update s :cont-pend conj c))))}
    {:type :given :pattern #"the counterparty cannot pay the full amount this month"
@@ -503,7 +505,9 @@
                      s (if (empty? (:players s))
                          (assoc s :players (ct/make-players (:rng w)))
                          s)
-                     c (ct/make-contract (:rng w) s 0)]
+                     c (ct/make-contract (:rng w) s
+                                         (or (:cont-offers s) [])
+                                         (or (:cont-pend s) []))]
                  (assoc w :state s :contract c)))}
    {:type :when :pattern #"a (BUY|SELL) contract is fully fulfilled"
     :handler (fn [w typ]
@@ -513,13 +517,13 @@
                          (assoc s :players (ct/make-players (:rng w))) s)
                      ctype (keyword (str/lower-case typ))
                      default-c {:type ctype :who 0 :what :wheat
-                                :amount 100.0 :price 10.0
-                                :duration 1 :months-left 1 :active true :pct 0.0}
+                                :amount 100.0 :price 1000.0
+                                :duration 1 :active true :pct 0.0}
                      contract (or (first (:cont-pend s)) default-c)
-                     contract (assoc contract :pct 1.0 :months-left 1 :type ctype)
+                     contract (assoc contract :pct 1.0 :duration 1 :type ctype)
                      s (if (= ctype :buy)
                          (assoc s :wheat (max (:wheat s 0) (:amount contract)))
-                         (assoc s :gold (max (:gold s 0) (* (:amount contract) (:price contract)))))
+                         (assoc s :gold (max (:gold s 0) (:price contract))))
                      result (ct/fulfill-contract (:rng w) s contract (:players s))
                      new-s (:state result)
                      pool (:msg-pool result)
@@ -542,7 +546,9 @@
                      s (if (empty? (:players s))
                          (assoc s :players (ct/make-players (:rng w)))
                          s)
-                     c (ct/make-contract (:rng w) s 0)]
+                     c (ct/make-contract (:rng w) s
+                                         (or (:cont-offers s) [])
+                                         (or (:cont-pend s) []))]
                  (assoc w :state s :contract c)))}
    {:type :when :pattern #"the (?:partial payment|partial shipment|default|shortfall) notification is displayed"
     :handler (fn [w]

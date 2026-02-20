@@ -1,12 +1,20 @@
 (ns pharaoh.state)
 
 (def default-prices
-  {:wheat 10 :manure 5 :slaves 1000
-   :horses 500 :oxen 300 :land 5000})
+  {:wheat 2 :manure 20 :slaves 500
+   :horses 100 :oxen 90 :land 10000})
 
 (def default-supply
-  {:wheat 10000 :manure 5000 :slaves 5000
-   :horses 3000 :oxen 4000 :land 10000})
+  {:wheat 1e6 :slaves 1e3 :horses 1e4
+   :oxen 1e4 :land 1e2 :manure 1e4})
+
+(def default-demand
+  {:wheat 1e7 :slaves 1e4 :horses 1e5
+   :oxen 1e5 :land 1e3 :manure 1e5})
+
+(def default-production
+  {:wheat 1e7 :slaves 1e4 :horses 1e5
+   :oxen 1e5 :land 1e3 :manure 1e5})
 
 (defn initial-state []
   {:month 1 :year 1
@@ -26,7 +34,7 @@
    :wt-sewn 0.0 :wt-grown 0.0 :wt-ripe 0.0
 
    ;; Health (0-1)
-   :sl-health 0.8 :ox-health 0.8 :hs-health 0.8
+   :sl-health 1.0 :ox-health 1.0 :hs-health 1.0
 
    ;; Feed rates
    :sl-feed-rt 0.0 :ox-feed-rt 0.0 :hs-feed-rt 0.0
@@ -34,32 +42,32 @@
    ;; Planting
    :ln-to-sew 0.0 :mn-to-sprd 0.0
    :wt-sewn-ln 20.0  ;; bushels of seed per acre
-   :wt-rot-rt 0.02   ;; 2% rot per month
+   :wt-rot-rt 0.05   ;; 5% rot per month (C default)
 
    ;; Overseers
    :overseers 0.0
-   :ov-pay 100.0
+   :ov-pay 300.0
    :ov-press 0.0
 
    ;; Pyramid
    :py-stones 0.0 :py-height 0.0
-   :py-base 346.41 :py-quota 0.0
+   :py-base 300.0 :py-quota 0.0
 
    ;; Loan
    :loan 0.0
-   :interest 5.0
+   :interest 0.5
    :int-addition 0.0
    :credit-rating 1.0
-   :credit-limit 500000.0
+   :credit-limit 50000.0
    :credit-lower 500000.0
 
    ;; Market
    :prices (into {} (map (fn [[k v]] [k (double v)]) default-prices))
-   :inflation 0.0
+   :inflation 0.001
    :supply (into {} (map (fn [[k v]] [k (double v)]) default-supply))
-   :demand (into {} (map (fn [[k v]] [k (double v)]) default-supply))
-   :production (into {} (map (fn [[k v]] [k (double v)]) default-supply))
-   :world-growth 0.10
+   :demand (into {} (map (fn [[k v]] [k (double v)]) default-demand))
+   :production (into {} (map (fn [[k v]] [k (double v)]) default-production))
+   :world-growth 0.05
 
    ;; Contracts
    :cont-offers [] :cont-pend [] :players []
@@ -93,8 +101,7 @@
       :world-growth 0.10
       :prices (assoc (:prices state) :land 5000.0 :wheat 8.0 :slaves 800.0))
     "Hard"
-    (assoc state :py-base 1154.7
-      :credit-limit 5e4 :credit-lower 5e4)
+    (assoc state :py-base 1154.7)
     state))
 
 (defn total-land [state]

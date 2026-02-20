@@ -70,12 +70,14 @@
      :ox-mult-k ox-mult-k :ox-mult ox-mult :max-wk-sl max-wk-sl}))
 
 (defn compute-efficiency [slaves max-wk-sl req-work]
-  (if (or (zero? slaves) (zero? req-work))
+  (if (zero? req-work)
     {:wk-sl 0 :wk-deff-sl 0 :tot-wk 0 :sl-eff 1.0}
+    (if (zero? slaves)
+      {:wk-sl 0 :wk-deff-sl 0 :tot-wk 0 :sl-eff 0.0}
     (let [req-wk-sl (/ req-work slaves)
           wk-sl (min max-wk-sl req-wk-sl)
           wk-deff-sl (if (< wk-sl req-wk-sl) (- req-wk-sl wk-sl) 0)
           tot-wk (* wk-sl slaves)
           sl-eff (if (pos? req-work) (/ tot-wk req-work) 1.0)]
       {:wk-sl wk-sl :wk-deff-sl wk-deff-sl
-       :tot-wk tot-wk :sl-eff sl-eff :req-wk-sl req-wk-sl})))
+       :tot-wk tot-wk :sl-eff sl-eff :req-wk-sl req-wk-sl}))))

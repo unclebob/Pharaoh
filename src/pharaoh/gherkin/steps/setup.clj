@@ -8,14 +8,20 @@
             [pharaoh.startup :as su]
             [pharaoh.state :as st]))
 
+(defn- game-state [rng]
+  (assoc (st/initial-state) :players (ct/make-players rng)))
+
 (defn steps []
   [;; ===== Game Initialization Given =====
    {:type :given :pattern #"the game is running"
-    :handler (fn [w] (assoc w :state (st/initial-state) :rng (r/make-rng 42)))}
+    :handler (fn [w] (let [rng (r/make-rng 42)]
+                       (assoc w :state (game-state rng) :rng rng)))}
    {:type :given :pattern #"the game has been initialized"
-    :handler (fn [w] (assoc w :state (st/initial-state) :rng (r/make-rng 42)))}
+    :handler (fn [w] (let [rng (r/make-rng 42)]
+                       (assoc w :state (game-state rng) :rng rng)))}
    {:type :given :pattern #"a random event has been triggered"
-    :handler (fn [w] (assoc w :state (st/initial-state) :rng (r/make-rng 42)))}
+    :handler (fn [w] (let [rng (r/make-rng 42)]
+                       (assoc w :state (game-state rng) :rng rng)))}
    {:type :given :pattern #"the player has not purchased a license"
     :handler (fn [w] (assoc-in w [:state :licensed] false))}
    {:type :given :pattern #"the game starts on the difficulty screen"

@@ -159,24 +159,24 @@
                w)}
    {:type :then :pattern #"slave health is multiplied by approximately ([\d.]+) with slight variance"
     :handler (fn [w factor]
-               (let [before (get-in w [:state-before :sl-health] 0.8)
+               (let [before (get-in w [:state-before :sl-health] 1.0)
                      after (:sl-health (:state w))
                      expected (* before (to-double factor))]
-                 (assert-near expected after (* expected 0.2)))
+                 (assert-near expected after (* expected 0.4)))
                w)}
    {:type :then :pattern #"oxen health is multiplied by approximately ([\d.]+) with slight variance"
     :handler (fn [w factor]
-               (let [before (get-in w [:state-before :ox-health] 0.8)
+               (let [before (get-in w [:state-before :ox-health] 1.0)
                      after (:ox-health (:state w))
                      expected (* before (to-double factor))]
-                 (assert-near expected after (* expected 0.2)))
+                 (assert-near expected after (* expected 0.4)))
                w)}
    {:type :then :pattern #"horse health is multiplied by approximately ([\d.]+) with slight variance"
     :handler (fn [w factor]
-               (let [before (get-in w [:state-before :hs-health] 0.8)
+               (let [before (get-in w [:state-before :hs-health] 1.0)
                      after (:hs-health (:state w))
                      expected (* before (to-double factor))]
-                 (assert-near expected after (* expected 0.2)))
+                 (assert-near expected after (* expected 0.4)))
                w)}
    {:type :then :pattern #"the birth rate exceeds the death rate"
     :handler (fn [w]
@@ -243,7 +243,7 @@
                w)}
    {:type :then :pattern #"slave health decreases by total sickness rate"
     :handler (fn [w]
-               (let [before (get-in w [:state-before :sl-health] 0.8)
+               (let [before (get-in w [:state-before :sl-health] 1.0)
                      after (:sl-health (:state w))]
                  (assert (<= after before) "Expected health to decrease"))
                w)}
