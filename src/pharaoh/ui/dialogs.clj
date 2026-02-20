@@ -135,6 +135,18 @@
       (-> state (dissoc :dialog)
           (assoc :message (str "Could not load: " path))))))
 
+(defn handle-confirm-save-yes [state]
+  (let [next-action (get-in state [:dialog :next-action])
+        path (:save-path state)]
+    (if path
+      (do (ps/save-game (dissoc state :dialog :dirty :save-path :pending-action) path)
+          (-> state (dissoc :dialog) (assoc :dirty false :pending-action next-action)))
+      (assoc state :dialog {:type :save-file :input "" :after-save next-action}))))
+
+(defn handle-confirm-save-no [state]
+  (let [next-action (get-in state [:dialog :next-action])]
+    (-> state (dissoc :dialog) (assoc :pending-action next-action))))
+
 (defn execute-dialog [rng state]
   (if-let [d (:dialog state)]
     (case (:type d)

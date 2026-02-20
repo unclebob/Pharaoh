@@ -739,6 +739,49 @@
     (is (nil? (:dialog result)))
     (is (string? (:message result)))))
 
+;; -- confirm-save dialog --
+
+(deftest open-confirm-save-dialog
+  (let [state (dlg/open-dialog (st/initial-state) :confirm-save
+                               {:next-action :quit})]
+    (is (= :confirm-save (get-in state [:dialog :type])))
+    (is (= :quit (get-in state [:dialog :next-action])))))
+
+(deftest confirm-save-yes-saves-and-returns-pending-action
+  (let [path (str "/tmp/pharaoh-confirm-" (System/currentTimeMillis) ".edn")
+        state (-> (st/initial-state)
+                  (assoc :gold 5555.0 :dirty true :save-path path)
+                  (dlg/open-dialog :confirm-save {:next-action :quit}))]
+    (let [result (dlg/handle-confirm-save-yes state)]
+      (is (= :quit (:pending-action result)))
+      (is (false? (:dirty result)))
+      (is (nil? (:dialog result)))
+      (is (.exists (java.io.File. path))))))
+
+(deftest confirm-save-yes-without-path-opens-save-dialog
+  (let [state (-> (st/initial-state)
+                  (assoc :dirty true)
+                  (dlg/open-dialog :confirm-save {:next-action :new-game}))]
+    (let [result (dlg/handle-confirm-save-yes state)]
+      (is (= :save-file (get-in result [:dialog :type])))
+      (is (= :new-game (get-in result [:dialog :after-save]))))))
+
+(deftest confirm-save-no-returns-pending-action-without-saving
+  (let [state (-> (st/initial-state)
+                  (assoc :dirty true)
+                  (dlg/open-dialog :confirm-save {:next-action :new-game}))]
+    (let [result (dlg/handle-confirm-save-no state)]
+      (is (= :new-game (:pending-action result)))
+      (is (nil? (:dialog result))))))
+
+;; -- confirm-overwrite dialog --
+
+(deftest open-confirm-overwrite-dialog
+  (let [state (dlg/open-dialog (st/initial-state) :confirm-overwrite
+                               {:path "/tmp/test.edn"})]
+    (is (= :confirm-overwrite (get-in state [:dialog :type])))
+    (is (= "/tmp/test.edn" (get-in state [:dialog :path])))))
+
 ;; -- error categories --
 
 (deftest execute-dialog-error-categories
