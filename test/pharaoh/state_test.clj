@@ -104,6 +104,32 @@
         result (st/set-difficulty s "Impossible")]
     (is (= s result))))
 
+(deftest set-difficulty-easy-sets-commodities
+  (let [s (st/set-difficulty (st/initial-state) "Easy")]
+    (is (== 100.0 (:slaves s)))
+    (is (== 50.0 (:oxen s)))
+    (is (== 7.0 (:horses s)))
+    (is (== 20000.0 (:wheat s)))
+    (is (== 400.0 (:manure s)))
+    (is (== 80.0 (:ln-fallow s)))))
+
+(deftest set-difficulty-easy-sets-overseers-and-loan
+  (let [s (st/set-difficulty (st/initial-state) "Easy")]
+    (is (== 7 (:overseers s)))
+    (is (== 393200.0 (:loan s)))
+    (is (== 0.0 (:gold s)))))
+
+(deftest set-difficulty-easy-sets-feed-rates
+  (let [s (st/set-difficulty (st/initial-state) "Easy")]
+    (is (== 10.0 (:sl-feed-rt s)))
+    (is (== 70.0 (:ox-feed-rt s)))
+    (is (== 55.0 (:hs-feed-rt s)))))
+
+(deftest set-difficulty-easy-sets-planting
+  (let [s (st/set-difficulty (st/initial-state) "Easy")]
+    (is (== 50.0 (:mn-to-sprd s)))
+    (is (== 10.0 (:ln-to-sew s)))))
+
 (deftest initial-state-has-dirty-flag
   (let [s (st/initial-state)]
     (is (false? (:dirty s)))
