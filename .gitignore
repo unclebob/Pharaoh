@@ -1,0 +1,7 @@
+target/
+.cpcache/
+.claude/
+saves/
+mygame
+test1
+test1.edn
