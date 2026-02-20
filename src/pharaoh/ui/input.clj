@@ -1,6 +1,7 @@
 (ns pharaoh.ui.input
   (:require [pharaoh.ui.layout :as lay]
             [pharaoh.ui.dialogs :as dlg]
+            [pharaoh.ui.file-actions :as fa]
             [pharaoh.simulation :as sim]
             [pharaoh.random :as r]))
 
@@ -96,6 +97,13 @@
         (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
           (dlg/set-dialog-mode state mode)
           (dlg/update-dialog-input state key-char))))))
+
+(defn handle-ctrl-key [state key-char]
+  (case key-char
+    \s (fa/do-save state)
+    \o (fa/do-open state)
+    \n (fa/do-new-game state)
+    nil))
 
 (defn handle-key [rng state key-char & [key-kw]]
   (cond

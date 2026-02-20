@@ -924,3 +924,31 @@
         right-edge (+ x w)
         bounds (inp/dialog-input-bounds)]
     (is (= 12 (- right-edge (+ (:x bounds) (:w bounds)))))))
+
+;; ---- handle-ctrl-key ----
+
+(deftest handle-ctrl-key-save-with-save-path
+  (let [path (str "/tmp/pharaoh-ctrl-s-" (System/currentTimeMillis) ".edn")
+        state (assoc (st/initial-state) :dirty true :save-path path)
+        result (inp/handle-ctrl-key state \s)]
+    (is (false? (:dirty result)))))
+
+(deftest handle-ctrl-key-save-without-save-path
+  (let [state (assoc (st/initial-state) :dirty true)
+        result (inp/handle-ctrl-key state \s)]
+    (is (= :save-file (get-in result [:dialog :type])))))
+
+(deftest handle-ctrl-key-open-when-clean
+  (let [state (assoc (st/initial-state) :dirty false)
+        result (inp/handle-ctrl-key state \o)]
+    (is (= :load-file (get-in result [:dialog :type])))))
+
+(deftest handle-ctrl-key-new-when-clean
+  (let [state (assoc (st/initial-state) :dirty false :gold 5000.0)
+        result (inp/handle-ctrl-key state \n)]
+    (is (= 0.0 (:gold result)))))
+
+(deftest handle-ctrl-key-unknown-returns-nil
+  (let [state (st/initial-state)
+        result (inp/handle-ctrl-key state \z)]
+    (is (nil? result))))
