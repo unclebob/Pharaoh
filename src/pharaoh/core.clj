@@ -42,6 +42,7 @@
       {:state (merge (st/initial-state) men)
        :screen :difficulty
        :rng rng
+       :menu {:open? false}
        :logo (q/load-image "resources/images/logo.png")
        :faces (load-faces)
        :icons (load-icons)}
@@ -95,63 +96,135 @@
     (draw-button (:x cancel) (:y cancel) (:w cancel) (:h cancel)
                  "Cancel (Esc)" 230 180 180 160 80 80)))
 
+(defn- draw-dialog-frame [x y w h]
+  (q/fill 245 245 255)
+  (q/stroke 100)
+  (q/stroke-weight 2)
+  (q/rect x y w h 5)
+  (q/stroke-weight 1))
+
+(defn- draw-file-dialog [d x y w h title]
+  (draw-dialog-frame x y w h)
+  (q/fill 0)
+  (q/text-size lay/title-size)
+  (q/text title (+ x 8) (+ y lay/title-size 8))
+  ;; Filename label and input box
+  (let [label-y (+ y (* lay/value-size 3) 8)
+        ib-x (+ x 80) ib-y (+ label-y (- lay/value-size) -2)
+        ib-w (- w 100) ib-h (+ lay/value-size 6)
+        btn-y (+ y h -20 (- lay/title-size) -8)
+        btn-h lay/title-size]
+    (q/fill 0)
+    (q/text-size lay/value-size)
+    (q/text "Filename:" (+ x 8) label-y)
+    (q/fill 255 255 255)
+    (q/stroke 150 150 150)
+    (q/stroke-weight 1)
+    (q/rect ib-x ib-y ib-w ib-h 3)
+    (q/fill 0) (q/no-stroke)
+    (q/text (str (:input d)) (+ ib-x 4) label-y)
+    ;; OK and Cancel buttons
+    (q/text-size lay/label-size)
+    (draw-button (+ x 8) btn-y 100 btn-h
+                 "OK (Enter)" 180 230 180 80 160 80)
+    (draw-button (+ x 120) btn-y 100 btn-h
+                 "Cancel (Esc)" 230 180 180 160 80 80)))
+
+(defn- draw-confirm-save-dialog [x y w h]
+  (draw-dialog-frame x y w h)
+  (q/fill 0)
+  (q/text-size lay/title-size)
+  (q/text "Save current game first?" (+ x 8) (+ y lay/title-size 8))
+  (let [btn-y (+ y h -20 (- lay/title-size) -8)
+        btn-h lay/title-size]
+    (q/text-size lay/label-size)
+    (draw-button (+ x 8) btn-y 100 btn-h
+                 "Yes (y)" 180 230 180 80 160 80)
+    (draw-button (+ x 120) btn-y 100 btn-h
+                 "No (n)" 230 180 180 160 80 80)
+    (draw-button (+ x 232) btn-y 100 btn-h
+                 "Cancel (Esc)" 220 220 220 140 140 140)))
+
+(defn- draw-confirm-overwrite-dialog [x y w h]
+  (draw-dialog-frame x y w h)
+  (q/fill 0)
+  (q/text-size lay/title-size)
+  (q/text "File exists. Overwrite?" (+ x 8) (+ y lay/title-size 8))
+  (let [btn-y (+ y h -20 (- lay/title-size) -8)
+        btn-h lay/title-size]
+    (q/text-size lay/label-size)
+    (draw-button (+ x 8) btn-y 100 btn-h
+                 "Yes (y)" 180 230 180 80 160 80)
+    (draw-button (+ x 120) btn-y 100 btn-h
+                 "No (n)" 230 180 180 160 80 80)))
+
 (defn- draw-dialog [state icons]
   (when-let [d (:dialog state)]
     (when (not= :contracts (:type d))
-      (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)
-            key-hint (dialog-shortcut d)
-            title (str (name (:type d))
-                       (when (:commodity d) (str " " (name (:commodity d))))
-                       (when key-hint (str " (" key-hint ")"))
-                       (when (:mode d) (str " [" (name (:mode d)) "]")))
-            icon (get icons (:type d))
-            icon-size (int (* h 0.4))
-            text-x (if icon (+ x icon-size 16) (+ x 8))]
-        (q/fill 245 245 255)
-        (q/stroke 100)
-        (q/stroke-weight 2)
-        (q/rect x y w h 5)
-        (q/stroke-weight 1)
-        (when icon
-          (q/image icon (+ x 8) (+ y 8) icon-size icon-size))
-        (q/fill 0)
-        (q/text-size lay/title-size)
-        (q/text title text-x (+ y lay/title-size 8))
-        (if (= :credit-check (:mode d))
-          (let [text-w (- (+ x w) text-x 8)
-                btn-y (+ y h -20 (- lay/title-size) -8)
-                btn-h lay/title-size]
+      (let [{:keys [x y w h]} (lay/cell-rect-span 2 8 6 5)]
+        (case (:type d)
+          :save-file
+          (draw-file-dialog d x y w h "Save Game")
+
+          :load-file
+          (draw-file-dialog d x y w h "Open Game")
+
+          :confirm-save
+          (draw-confirm-save-dialog x y w h)
+
+          :confirm-overwrite
+          (draw-confirm-overwrite-dialog x y w h)
+
+          ;; Default: numeric dialogs (buy-sell, loan, feed, etc.)
+          (let [key-hint (dialog-shortcut d)
+                title (str (name (:type d))
+                           (when (:commodity d) (str " " (name (:commodity d))))
+                           (when key-hint (str " (" key-hint ")"))
+                           (when (:mode d) (str " [" (name (:mode d)) "]")))
+                icon (get icons (:type d))
+                icon-size (int (* h 0.4))
+                text-x (if icon (+ x icon-size 16) (+ x 8))]
+            (draw-dialog-frame x y w h)
+            (when icon
+              (q/image icon (+ x 8) (+ y 8) icon-size icon-size))
             (q/fill 0)
-            (q/text-size lay/value-size)
-            (q/text-leading (* lay/value-size 1.3))
-            (q/text (str (:message d)) text-x (+ y (* lay/title-size 2) 4)
-                    text-w (- btn-y y (- (* lay/title-size 2)) 8))
-            (q/text-size lay/label-size)
-            ;; Yes button — green tint
-            (q/fill 180 230 180)
-            (q/stroke 80 160 80)
-            (q/rect (+ x 8) btn-y 100 btn-h 3)
-            (q/fill 0) (q/no-stroke)
-            (q/text "Yes (y)" (+ x 14) (+ btn-y lay/label-size -2))
-            ;; No button — red tint
-            (q/fill 230 180 180)
-            (q/stroke 160 80 80)
-            (q/rect (+ x 120) btn-y 100 btn-h 3)
-            (q/fill 0) (q/no-stroke)
-            (q/text "No (n)" (+ x 126) (+ btn-y lay/label-size -2)))
-          (let [amount-y (+ y (* lay/value-size 3) 8)
-                ib (inp/dialog-input-bounds)]
-            (q/fill 0)
-            (q/text-size lay/value-size)
-            (q/text "Amount:" text-x amount-y)
-            (q/fill 255 255 255)
-            (q/stroke 150 150 150)
-            (q/stroke-weight 1)
-            (q/rect (:x ib) (:y ib) (:w ib) (:h ib) 3)
-            (q/fill 0)
-            (q/no-stroke)
-            (q/text (str (:input d)) (+ (:x ib) 4) amount-y)
-            (draw-dialog-buttons d)))))))
+            (q/text-size lay/title-size)
+            (q/text title text-x (+ y lay/title-size 8))
+            (if (= :credit-check (:mode d))
+              (let [text-w (- (+ x w) text-x 8)
+                    btn-y (+ y h -20 (- lay/title-size) -8)
+                    btn-h lay/title-size]
+                (q/fill 0)
+                (q/text-size lay/value-size)
+                (q/text-leading (* lay/value-size 1.3))
+                (q/text (str (:message d)) text-x (+ y (* lay/title-size 2) 4)
+                        text-w (- btn-y y (- (* lay/title-size 2)) 8))
+                (q/text-size lay/label-size)
+                ;; Yes button -- green tint
+                (q/fill 180 230 180)
+                (q/stroke 80 160 80)
+                (q/rect (+ x 8) btn-y 100 btn-h 3)
+                (q/fill 0) (q/no-stroke)
+                (q/text "Yes (y)" (+ x 14) (+ btn-y lay/label-size -2))
+                ;; No button -- red tint
+                (q/fill 230 180 180)
+                (q/stroke 160 80 80)
+                (q/rect (+ x 120) btn-y 100 btn-h 3)
+                (q/fill 0) (q/no-stroke)
+                (q/text "No (n)" (+ x 126) (+ btn-y lay/label-size -2)))
+              (let [amount-y (+ y (* lay/value-size 3) 8)
+                    ib (inp/dialog-input-bounds)]
+                (q/fill 0)
+                (q/text-size lay/value-size)
+                (q/text "Amount:" text-x amount-y)
+                (q/fill 255 255 255)
+                (q/stroke 150 150 150)
+                (q/stroke-weight 1)
+                (q/rect (:x ib) (:y ib) (:w ib) (:h ib) 3)
+                (q/fill 0)
+                (q/no-stroke)
+                (q/text (str (:input d)) (+ (:x ib) 4) amount-y)
+                (draw-dialog-buttons d)))))))))
 
 (defn- fmt-offer [offer players]
   (let [name (get-in players [(:who offer) :name] "?")
@@ -309,7 +382,7 @@
   (and (map? (:message state))
        (not= :contracts (get-in state [:dialog :type]))))
 
-(defn- draw [{:keys [screen state faces icons logo]}]
+(defn- draw [{:keys [screen state faces icons logo] :as app}]
   (if (= :difficulty screen)
     (draw-difficulty logo)
     (do
@@ -317,7 +390,8 @@
       (draw-dialog state icons)
       (draw-contracts-dialog state)
       (when (show-face-message? state)
-        (draw-face-message (:message state) faces)))))
+        (draw-face-message (:message state) faces))
+      (menu/draw-menu-bar app))))
 
 (defn- quit! []
   (q/exit)
