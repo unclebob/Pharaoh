@@ -71,6 +71,7 @@
    :wk-addition 0.0
    :message nil
    :game-over false :game-won false
+   :dirty false :save-path nil
 
    ;; Computed values (filled during simulation)
    :sl-eff 1.0 :wt-eff 1.0

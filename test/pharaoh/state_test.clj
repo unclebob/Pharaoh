@@ -71,3 +71,8 @@
   (let [s (st/initial-state)
         result (st/set-difficulty s "Impossible")]
     (is (= s result))))
+
+(deftest initial-state-has-dirty-flag
+  (let [s (st/initial-state)]
+    (is (false? (:dirty s)))
+    (is (nil? (:save-path s)))))
