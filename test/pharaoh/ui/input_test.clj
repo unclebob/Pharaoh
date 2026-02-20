@@ -3,6 +3,7 @@
             [pharaoh.ui.input :as inp]
             [pharaoh.ui.layout :as lay]
             [pharaoh.ui.dialogs :as dlg]
+            [pharaoh.persistence :as ps]
             [pharaoh.random :as r]
             [pharaoh.state :as st]))
 
@@ -952,3 +953,109 @@
   (let [state (st/initial-state)
         result (inp/handle-ctrl-key state \z)]
     (is (nil? result))))
+
+;; ---- handle-key: confirm-save dialog ----
+
+(deftest handle-key-confirm-save-yes-with-path
+  (let [rng (r/make-rng 42)
+        path (str "/tmp/pharaoh-hk-" (System/currentTimeMillis) ".edn")
+        state (-> (st/initial-state)
+                  (assoc :dirty true :save-path path)
+                  (dlg/open-dialog :confirm-save {:next-action :quit}))
+        result (inp/handle-key rng state \y)]
+    (is (= :quit (:pending-action result)))
+    (is (false? (:dirty result)))))
+
+(deftest handle-key-confirm-save-no
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :confirm-save {:next-action :new-game}))
+        result (inp/handle-key rng state \n)]
+    (is (= :new-game (:pending-action result)))
+    (is (nil? (:dialog result)))))
+
+(deftest handle-key-confirm-save-esc-closes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :confirm-save {:next-action :quit}))
+        result (inp/handle-key rng state (char 27))]
+    (is (nil? (:dialog result)))))
+
+;; ---- handle-key: confirm-overwrite dialog ----
+
+(deftest handle-key-confirm-overwrite-yes-saves-file
+  (let [rng (r/make-rng 42)
+        path (str "/tmp/pharaoh-ow-" (System/currentTimeMillis) ".edn")
+        state (-> (st/initial-state)
+                  (assoc :gold 4321.0)
+                  (dlg/open-dialog :confirm-overwrite {:path path}))
+        result (inp/handle-key rng state \y)]
+    (is (nil? (:dialog result)))
+    (is (= path (:save-path result)))
+    (is (.exists (java.io.File. path)))))
+
+(deftest handle-key-confirm-overwrite-no-closes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :confirm-overwrite {:path "/tmp/x.edn"}))
+        result (inp/handle-key rng state \n)]
+    (is (nil? (:dialog result)))))
+
+(deftest handle-key-confirm-overwrite-esc-closes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :confirm-overwrite {:path "/tmp/x.edn"}))
+        result (inp/handle-key rng state (char 27))]
+    (is (nil? (:dialog result)))))
+
+;; ---- handle-key: save-file dialog ----
+
+(deftest handle-key-save-file-enter-saves
+  (let [rng (r/make-rng 42)
+        path (str "/tmp/pharaoh-sf-" (System/currentTimeMillis) ".edn")
+        state (-> (st/initial-state)
+                  (assoc :gold 1234.0)
+                  (dlg/open-dialog :save-file {:input path}))
+        result (inp/handle-key rng state \return)]
+    (is (nil? (:dialog result)))
+    (is (= path (:save-path result)))
+    (is (.exists (java.io.File. path)))))
+
+(deftest handle-key-save-file-typing
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file))
+        result (inp/handle-key rng state \t)]
+    (is (= "t" (get-in result [:dialog :input])))))
+
+(deftest handle-key-save-file-esc-closes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file))
+        result (inp/handle-key rng state (char 27))]
+    (is (nil? (:dialog result)))))
+
+;; ---- handle-key: load-file dialog ----
+
+(deftest handle-key-load-file-enter-loads
+  (let [rng (r/make-rng 42)
+        path (str "/tmp/pharaoh-lf-" (System/currentTimeMillis) ".edn")]
+    (ps/save-game (assoc (st/initial-state) :gold 9876.0) path)
+    (let [state (-> (st/initial-state) (dlg/open-dialog :load-file {:input path}))
+          result (inp/handle-key rng state \return)]
+      (is (nil? (:dialog result)))
+      (is (= 9876.0 (:gold (:loaded-state result)))))))
+
+(deftest handle-key-load-file-typing
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :load-file))
+        result (inp/handle-key rng state \/)]
+    (is (= "/" (get-in result [:dialog :input])))))
+
+(deftest handle-key-load-file-esc-closes
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :load-file))
+        result (inp/handle-key rng state (char 27))]
+    (is (nil? (:dialog result)))))

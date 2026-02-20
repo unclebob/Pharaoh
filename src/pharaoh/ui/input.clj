@@ -79,24 +79,52 @@
   (and (= :loan (get-in state [:dialog :type]))
        (= :credit-check (get-in state [:dialog :mode]))))
 
+(defn- handle-confirm-key [state key-char handler-yes handler-no]
+  (case key-char
+    \y (handler-yes state)
+    \n (handler-no state)
+    (if (= key-char esc-char) (dlg/close-dialog state) state)))
+
+(defn- handle-file-dialog-key [rng state key-char]
+  (cond
+    (= key-char esc-char) (dlg/close-dialog state)
+    (or (= key-char \return) (= key-char \newline))
+    (dlg/execute-dialog rng state)
+    :else (dlg/update-dialog-input state key-char)))
+
+(defn- handle-overwrite-yes [rng state]
+  (let [path (get-in state [:dialog :path])]
+    (dlg/execute-dialog rng (-> state
+                                (dissoc :dialog)
+                                (dlg/open-dialog :save-file {:input path})))))
+
+(defn- handle-generic-dialog-key [rng state key-char]
+  (if (credit-check-mode? state)
+    (case key-char
+      \y (dlg/accept-credit-check rng state)
+      \n (dlg/reject-credit-check state)
+      (if (= key-char esc-char) (dlg/reject-credit-check state) state))
+    (cond
+      (= key-char esc-char) (dlg/close-dialog state)
+      (or (= key-char \return) (= key-char \newline))
+      (dlg/execute-dialog rng (dissoc state :message))
+      :else
+      (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
+        (dlg/set-dialog-mode state mode)
+        (dlg/update-dialog-input state key-char)))))
+
 (defn- handle-dialog-key [rng state key-char key-kw]
-  (if (= :contracts (get-in state [:dialog :type]))
-    (handle-contracts-key state key-char key-kw)
-    (if (credit-check-mode? state)
-      (case key-char
-        \y (dlg/accept-credit-check rng state)
-        \n (dlg/reject-credit-check state)
-        (if (= key-char esc-char)
-          (dlg/reject-credit-check state)
-          state))
-      (cond
-        (= key-char esc-char) (dlg/close-dialog state)
-        (or (= key-char \return) (= key-char \newline))
-        (dlg/execute-dialog rng (dissoc state :message))
-        :else
-        (if-let [mode (dialog-mode-for (get-in state [:dialog :type]) key-char)]
-          (dlg/set-dialog-mode state mode)
-          (dlg/update-dialog-input state key-char))))))
+  (let [dtype (get-in state [:dialog :type])]
+    (case dtype
+      :contracts (handle-contracts-key state key-char key-kw)
+      :confirm-save (handle-confirm-key state key-char
+                                        dlg/handle-confirm-save-yes
+                                        dlg/handle-confirm-save-no)
+      :confirm-overwrite (handle-confirm-key state key-char
+                                             (partial handle-overwrite-yes rng)
+                                             dlg/close-dialog)
+      (:save-file :load-file) (handle-file-dialog-key rng state key-char)
+      (handle-generic-dialog-key rng state key-char))))
 
 (defn handle-ctrl-key [state key-char]
   (case key-char

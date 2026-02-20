@@ -10,7 +10,10 @@
             [pharaoh.startup :as su]
             [pharaoh.ui.layout :as lay]
             [pharaoh.ui.screen :as scr]
-            [pharaoh.ui.input :as inp])
+            [pharaoh.ui.input :as inp]
+            [pharaoh.ui.menu :as menu]
+            [pharaoh.ui.file-actions :as fa]
+            [pharaoh.ui.dialogs :as dlg])
   (:gen-class))
 
 (defn- load-faces []
@@ -320,19 +323,46 @@
   (q/exit)
   (future (Thread/sleep 500) (System/exit 0)))
 
+(defn- handle-pending-action [app new-state]
+  (let [action (:pending-action new-state)
+        clean (dissoc new-state :pending-action)]
+    (case action
+      :quit (do (quit!) app)
+      :new-game (assoc app :state (assoc (st/initial-state) :dirty false :save-path nil))
+      :load (assoc app :state (dlg/open-dialog clean :load-file))
+      (assoc app :state clean))))
+
+(defn- apply-state-result [app new-state]
+  (cond
+    (:quit-clicked new-state)
+    (do (quit!) app)
+
+    (:pending-action new-state)
+    (handle-pending-action app new-state)
+
+    (:loaded-state new-state)
+    (let [loaded (:loaded-state new-state)]
+      (assoc app :state (assoc loaded :dirty false :save-path (:save-path new-state))))
+
+    :else
+    (let [app (assoc app :state (dissoc new-state :reset-visit-timers))]
+      (if (:reset-visit-timers new-state)
+        (vis/reset-timers app (System/currentTimeMillis))
+        app))))
+
 (defn- key-pressed [{:keys [screen] :as app} {:keys [raw-key key]}]
   (set! (.key (quil.applet/current-applet)) (char 0))
   (if (= :difficulty screen)
     (if (= (int raw-key) 27)
       (do (quit!) app)
       (su/select-difficulty app (su/difficulty-for-key raw-key)))
-    (let [new-state (inp/handle-key (:rng app) (:state app) raw-key key)]
-      (if (:quit-clicked new-state)
-        (do (quit!) app)
-        (let [app (assoc app :state (dissoc new-state :reset-visit-timers))]
-          (if (:reset-visit-timers new-state)
-            (vis/reset-timers app (System/currentTimeMillis))
-            app))))))
+    (let [mods (q/key-modifiers)
+          ctrl? (contains? mods :ctrl)
+          new-state (if (and ctrl? (not (:dialog (:state app))))
+                      (or (inp/handle-ctrl-key (:state app) raw-key)
+                          (inp/handle-key (:rng app) (:state app) raw-key key))
+                      (inp/handle-key (:rng app) (:state app) raw-key key))]
+      (apply-state-result app new-state))))
 
 (defn- mouse-moved [{:keys [screen state] :as app} {:keys [x y]}]
   (if (= :difficulty screen)
@@ -342,17 +372,29 @@
 (defn- mouse-clicked [{:keys [screen state rng] :as app} {:keys [x y]}]
   (if (= :difficulty screen)
     (su/select-difficulty app (su/difficulty-for-click x y))
-    (let [new-state (inp/handle-mouse state x y rng)]
-      (cond
-        (:run-clicked new-state)
-        (assoc app :state
-               (sim/do-run rng (dissoc new-state :run-clicked)))
+    (cond
+      ;; Menu bar click
+      (and (<= y menu/menu-bar-h) (<= x 60))
+      (menu/toggle-menu app)
 
-        (:quit-clicked new-state)
-        (do (quit!) app)
+      ;; Menu dropdown item click
+      (get-in app [:menu :open?])
+      (if-let [action (menu/menu-item-hit x y)]
+        (let [new-state (case action
+                          :save (fa/do-save state)
+                          :save-as (fa/do-save-as state)
+                          :open (fa/do-open state)
+                          :new-game (fa/do-new-game state)
+                          :quit (fa/do-quit state))]
+          (apply-state-result (menu/close-menu app) new-state))
+        (menu/close-menu app))
 
-        :else
-        (assoc app :state new-state)))))
+      ;; Normal game click
+      :else
+      (let [new-state (inp/handle-mouse state x y rng)]
+        (if (:run-clicked new-state)
+          (assoc app :state (sim/do-run rng (dissoc new-state :run-clicked)))
+          (apply-state-result app new-state))))))
 
 (defn -main [& _args]
   (q/defsketch pharaoh-game
