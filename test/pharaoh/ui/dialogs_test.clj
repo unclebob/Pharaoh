@@ -1,10 +1,12 @@
 (ns pharaoh.ui.dialogs-test
   (:require [clojure.string :as str]
             [clojure.test :refer :all]
+            [pharaoh.persistence :as ps]
             [pharaoh.ui.dialogs :as dlg]
             [pharaoh.messages :as msg]
             [pharaoh.random :as r]
-            [pharaoh.state :as st]))
+            [pharaoh.state :as st])
+  (:import [java.io File]))
 
 ;; ---- open-dialog ----
 
@@ -667,6 +669,74 @@
                          :cont-pend pend)
                   (dlg/open-contracts-dialog))
         result (dlg/accept-selected state)]
+    (is (string? (:message result)))))
+
+;; -- save-file dialog --
+
+(deftest open-save-file-dialog
+  (let [state (dlg/open-dialog (st/initial-state) :save-file)]
+    (is (= :save-file (get-in state [:dialog :type])))
+    (is (= "" (get-in state [:dialog :input])))))
+
+(deftest update-file-input-accepts-path-chars
+  (let [state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file)
+                  (dlg/update-dialog-input \m)
+                  (dlg/update-dialog-input \y)
+                  (dlg/update-dialog-input \-)
+                  (dlg/update-dialog-input \g))]
+    (is (= "my-g" (get-in state [:dialog :input])))))
+
+(deftest update-file-input-accepts-full-path
+  (let [state (-> (st/initial-state)
+                  (dlg/open-dialog :load-file))
+        state (reduce dlg/update-dialog-input state (seq "/tmp/save_1.edn"))]
+    (is (= "/tmp/save_1.edn" (get-in state [:dialog :input])))))
+
+(deftest update-file-input-backspace-works
+  (let [state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file))
+        state (reduce dlg/update-dialog-input state (seq "abc"))
+        state (dlg/update-dialog-input state \backspace)]
+    (is (= "ab" (get-in state [:dialog :input])))))
+
+(deftest execute-save-file-dialog-saves-game
+  (let [path (str "/tmp/pharaoh-dlg-test-" (System/currentTimeMillis) ".edn")
+        rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :gold 7777.0 :dirty true)
+                  (dlg/open-dialog :save-file {:input path}))
+        result (dlg/execute-dialog rng state)]
+    (is (nil? (:dialog result)))
+    (is (false? (:dirty result)))
+    (is (= path (:save-path result)))
+    (is (.exists (File. path)))))
+
+(deftest execute-save-file-empty-input-shows-error
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :save-file))
+        result (dlg/execute-dialog rng state)]
+    (is (= "No filename entered." (:message result)))))
+
+(deftest execute-load-file-dialog-loads-game
+  (let [path (str "/tmp/pharaoh-load-test-" (System/currentTimeMillis) ".edn")
+        rng (r/make-rng 42)
+        saved-state (assoc (st/initial-state) :gold 3333.0)]
+    (ps/save-game saved-state path)
+    (let [state (-> (st/initial-state)
+                    (dlg/open-dialog :load-file {:input path}))
+          result (dlg/execute-dialog rng state)]
+      (is (nil? (:dialog result)))
+      (is (= 3333.0 (:gold (:loaded-state result))))
+      (is (false? (:dirty result))))))
+
+(deftest execute-load-file-missing-shows-error
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (dlg/open-dialog :load-file {:input "/tmp/no-such-file-xyz.edn"}))
+        result (dlg/execute-dialog rng state)]
+    (is (nil? (:dialog result)))
     (is (string? (:message result)))))
 
 ;; -- error categories --

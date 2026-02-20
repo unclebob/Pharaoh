@@ -1,8 +1,10 @@
 (ns pharaoh.ui.dialogs
-  (:require [pharaoh.contracts :as ct]
+  (:require [clojure.string :as str]
+            [pharaoh.contracts :as ct]
             [pharaoh.loans :as ln]
             [pharaoh.messages :as msg]
             [pharaoh.overseers :as ov]
+            [pharaoh.persistence :as ps]
             [pharaoh.trading :as tr]
             [pharaoh.random :as r]))
 
@@ -50,12 +52,23 @@
 (defn open-dialog [state dialog-type & [opts]]
   (assoc state :dialog (merge {:type dialog-type :input "" :mode nil} opts)))
 
+(def ^:private file-dialog-types #{:save-file :load-file})
+
+(defn- file-dialog? [d]
+  (file-dialog-types (:type d)))
+
+(defn- valid-file-char? [ch]
+  (or (Character/isLetterOrDigit ch)
+      (contains? #{\- \_ \. \/ \\} ch)))
+
 (defn update-dialog-input [state ch]
   (if-let [d (:dialog state)]
     (cond
       (= ch \backspace)
       (assoc state :dialog
              (update d :input #(if (seq %) (subs % 0 (dec (count %))) "")))
+      (and (file-dialog? d) (valid-file-char? ch))
+      (assoc state :dialog (update d :input str ch))
       (or (Character/isDigit ch) (= ch \.))
       (assoc state :dialog (update d :input str ch))
       :else state)
@@ -108,9 +121,26 @@
 (defn- pick-error [rng cat]
   (msg/pick rng (get msg/input-error-messages cat)))
 
+(defn- execute-save-file [state path]
+  (if (empty? path)
+    (assoc state :message "No filename entered.")
+    (do (ps/save-game (dissoc state :dialog :dirty :save-path) path)
+        (-> state (dissoc :dialog) (assoc :dirty false :save-path path)))))
+
+(defn- execute-load-file [state path]
+  (let [loaded (when (seq path) (ps/load-game path))]
+    (if loaded
+      (-> state (dissoc :dialog)
+          (assoc :dirty false :save-path path :loaded-state loaded))
+      (-> state (dissoc :dialog)
+          (assoc :message (str "Could not load: " path))))))
+
 (defn execute-dialog [rng state]
   (if-let [d (:dialog state)]
-    (let [amt (parse-input (:input d))]
+    (case (:type d)
+      :save-file (execute-save-file state (str/trim (:input d)))
+      :load-file (execute-load-file state (str/trim (:input d)))
+      (let [amt (parse-input (:input d))]
       (if (nil? amt)
         (assoc state :message (pick-error rng (error-category (:type d))))
         (case (:type d)
@@ -192,5 +222,5 @@
             (assoc state :message
                    (pick-error rng :overseer-no-function)))
 
-          (close-dialog state))))
+          (close-dialog state)))))
     state))
