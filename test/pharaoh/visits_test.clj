@@ -118,6 +118,26 @@
         result (v/check-visits app now)]
     (is (nil? (get-in result [:state :message])))))
 
+;; --- reset-timers ---
+
+(deftest reset-timers-sets-all-future-timestamps
+  (let [rng (r/make-rng 42)
+        app (make-app :next-idle 0 :next-chat 0 :next-dunning 0)
+        now 5000
+        result (v/reset-timers app now)]
+    (is (> (:next-idle result) now))
+    (is (> (:next-chat result) now))
+    (is (> (:next-dunning result) now))))
+
+(deftest reset-timers-preserves-rest-of-app
+  (let [app (make-app :next-idle 0 :next-chat 0 :next-dunning 0)
+        now 5000
+        result (v/reset-timers app now)]
+    (is (= (:state app) (:state result)))
+    (is (= (:rng app) (:rng result)))))
+
+;; --- check-visits ---
+
 (deftest check-visits-only-one-fires
   (let [app (make-app :next-idle 0 :next-chat 0 :next-dunning 0)
         app (assoc-in app [:state :loan] 50000.0)

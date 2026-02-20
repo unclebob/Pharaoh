@@ -182,6 +182,12 @@
     (doseq [ch [\a \b \1 \space]]
       (is (nil? (:message (inp/handle-key rng state ch)))))))
 
+(deftest handle-key-dismiss-face-message-sets-reset-visit-timers
+  (let [rng (r/make-rng 42)
+        state (assoc (st/initial-state) :message {:text "Hello" :face 0})
+        result (inp/handle-key rng state \x)]
+    (is (true? (:reset-visit-timers result)))))
+
 ;; ---- handle-key: main mode, key-actions ----
 
 (deftest handle-key-w-opens-wheat-trade

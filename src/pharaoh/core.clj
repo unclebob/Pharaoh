@@ -329,7 +329,10 @@
     (let [new-state (inp/handle-key (:rng app) (:state app) raw-key key)]
       (if (:quit-clicked new-state)
         (do (quit!) app)
-        (assoc app :state new-state)))))
+        (let [app (assoc app :state (dissoc new-state :reset-visit-timers))]
+          (if (:reset-visit-timers new-state)
+            (vis/reset-timers app (System/currentTimeMillis))
+            app))))))
 
 (defn- mouse-moved [{:keys [screen state] :as app} {:keys [x y]}]
   (if (= :difficulty screen)

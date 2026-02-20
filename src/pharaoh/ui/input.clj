@@ -108,7 +108,7 @@
                   (let [[msg & rest] (:contract-msgs state)]
                     (assoc state :message msg :contract-msgs (vec rest)))
                   state)]
-      (cond-> state
+      (cond-> (assoc state :reset-visit-timers true)
         (:game-over state) (assoc :quit-clicked true)))
 
     :else

@@ -117,14 +117,30 @@
           :buy-sell
           (let [commodity (:commodity d)]
             (case (:mode d)
-              :buy (let [result (tr/buy rng state commodity amt)]
-                     (if (:error result)
-                       (assoc state :message (:error result))
-                       (close-dialog result)))
-              :sell (let [result (tr/sell rng state commodity amt)]
-                      (if (:error result)
-                        (assoc state :message (:error result))
-                        (close-dialog result)))
+              :buy (let [v (tr/validate-buy state commodity amt)]
+                     (if (= :error (:status v))
+                       (assoc state :message
+                              (format (msg/pick rng msg/insufficient-funds-messages)
+                                      (:max-amount v)))
+                       (let [supply (get-in state [:supply commodity] 0.0)
+                             actual (min amt (max supply 1.0))
+                             result (tr/buy rng state commodity amt)]
+                         (if (< actual amt)
+                           (assoc (close-dialog result) :message
+                                  (format (msg/pick rng msg/demand-limit-messages)
+                                          actual))
+                           (close-dialog result)))))
+              :sell (let [v (tr/validate-sell state commodity amt)]
+                      (case (:status v)
+                        :error
+                        (assoc state :message
+                               (format (msg/pick rng msg/selling-more-messages)
+                                       (:max-amount v)))
+                        :capped
+                        (assoc state :message
+                               (format (msg/pick rng msg/supply-limit-messages)
+                                       (:max-amount v)))
+                        (close-dialog (tr/sell rng state commodity amt))))
               (assoc state :message
                      (pick-error rng :buysell-no-function))))
 

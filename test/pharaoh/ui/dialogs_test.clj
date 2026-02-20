@@ -1,6 +1,8 @@
 (ns pharaoh.ui.dialogs-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.string :as str]
+            [clojure.test :refer :all]
             [pharaoh.ui.dialogs :as dlg]
+            [pharaoh.messages :as msg]
             [pharaoh.random :as r]
             [pharaoh.state :as st]))
 
@@ -176,17 +178,118 @@
     (let [result (dlg/execute-dialog rng state)]
       (is (string? (:message result))))))
 
-(deftest execute-dialog-buy-with-low-gold-still-executes
+(deftest execute-dialog-buy-with-just-enough-gold-succeeds
   (let [rng (r/make-rng 42)
         state (-> (st/initial-state)
-                  (assoc :gold 5.0)
+                  (assoc :gold 15.0)
                   (dlg/open-dialog :buy-sell {:commodity :wheat})
                   (dlg/set-dialog-mode :buy)
                   (assoc-in [:dialog :input] "1"))]
-    ;; buy completes (dialog closes) even with minimal gold
+    ;; buy completes (dialog closes) with sufficient gold
     (let [result (dlg/execute-dialog rng state)]
       (is (nil? (:dialog result)))
       (is (> (:wheat result) 0.0)))))
+
+;; -- buy validation --
+
+(deftest execute-dialog-buy-insufficient-gold-shows-error
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :gold 500.0)
+                  (assoc-in [:prices :wheat] 10.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :buy)
+                  (assoc-in [:dialog :input] "100"))]
+    (let [result (dlg/execute-dialog rng state)]
+      ;; dialog stays open
+      (is (some? (:dialog result)))
+      ;; error message from insufficient-funds pool
+      (is (string? (:message result)))
+      ;; gold unchanged
+      (is (== 500.0 (:gold result))))))
+
+(deftest execute-dialog-buy-exactly-affordable-succeeds
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :gold 1000.0)
+                  (assoc-in [:prices :wheat] 10.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :buy)
+                  (assoc-in [:dialog :input] "100"))]
+    (let [result (dlg/execute-dialog rng state)]
+      (is (nil? (:dialog result)))
+      (is (>= (:gold result) 0.0)))))
+
+;; -- buy validation: demand limit --
+
+(deftest execute-dialog-buy-low-supply-shows-demand-limit-and-buys
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :gold 50000.0)
+                  (assoc-in [:prices :wheat] 10.0)
+                  (assoc-in [:supply :wheat] 3.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :buy)
+                  (assoc-in [:dialog :input] "5000"))
+        result (dlg/execute-dialog rng state)]
+    ;; Dialog should be closed (purchase completed)
+    (is (nil? (:dialog result)))
+    ;; Should show demand-limit message (string, not face map)
+    (is (string? (:message result)))
+    ;; Message should include the available supply amount
+    (is (str/includes? (:message result) "3"))
+    ;; Should have bought what was available (3, not 5000)
+    (is (> (:wheat result) (:wheat (st/initial-state))))
+    (is (< (:wheat result) 5000.0))))
+
+(deftest execute-dialog-buy-sufficient-supply-no-demand-limit
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :gold 50000.0)
+                  (assoc-in [:prices :wheat] 10.0)
+                  (assoc-in [:supply :wheat] 10000.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :buy)
+                  (assoc-in [:dialog :input] "100"))
+        result (dlg/execute-dialog rng state)]
+    ;; Dialog should be closed
+    (is (nil? (:dialog result)))
+    ;; No demand-limit message (message should be nil or not a string)
+    (is (nil? (:message result)))))
+
+;; -- sell validation --
+
+(deftest execute-dialog-sell-more-than-owned-shows-error
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :wheat 100.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :sell)
+                  (assoc-in [:dialog :input] "200"))]
+    (let [result (dlg/execute-dialog rng state)]
+      ;; dialog stays open
+      (is (some? (:dialog result)))
+      ;; error message shown
+      (is (string? (:message result)))
+      ;; wheat unchanged
+      (is (== 100.0 (:wheat result))))))
+
+(deftest execute-dialog-sell-exceeds-market-capacity-shows-error
+  (let [rng (r/make-rng 42)
+        state (-> (st/initial-state)
+                  (assoc :wheat 5000.0)
+                  (assoc-in [:demand :wheat] 1000.0)
+                  (assoc-in [:supply :wheat] 0.0)
+                  (dlg/open-dialog :buy-sell {:commodity :wheat})
+                  (dlg/set-dialog-mode :sell)
+                  (assoc-in [:dialog :input] "2000"))]
+    (let [result (dlg/execute-dialog rng state)]
+      ;; dialog stays open
+      (is (some? (:dialog result)))
+      ;; error message shown
+      (is (string? (:message result)))
+      ;; wheat unchanged
+      (is (== 5000.0 (:wheat result))))))
 
 ;; -- loan --
 

@@ -128,6 +128,69 @@ Feature: Input Validation
     Then a manure input error message is displayed
 
   # -----------------------------------------------------------
+  # Buy Validation — Insufficient Gold
+  # -----------------------------------------------------------
+
+  Scenario: Buy more than gold allows shows error and keeps dialog open
+    Given a buy-sell dialog is open for wheat
+    And the player has 500 gold
+    And wheat costs 10 per bushel
+    And the dialog mode is set to buy
+    And the dialog input contains "100"
+    When the player presses enter
+    Then the dialog remains open
+    And an insufficient funds error message is displayed
+
+  Scenario: Buy exactly what gold allows succeeds
+    Given a buy-sell dialog is open for wheat
+    And the player has 1000 gold
+    And wheat costs 10 per bushel
+    And the dialog mode is set to buy
+    And the dialog input contains "100"
+    When the player presses enter
+    Then the dialog is closed
+    And the player's gold is non-negative
+
+  # -----------------------------------------------------------
+  # Sell Validation — Selling More Than Owned
+  # -----------------------------------------------------------
+
+  Scenario: Sell more than owned shows error and keeps dialog open
+    Given a buy-sell dialog is open for wheat
+    And the player has 100 bushels of wheat
+    And the dialog mode is set to sell
+    And the dialog input contains "200"
+    When the player presses enter
+    Then the dialog remains open
+    And a selling-more error message is displayed
+
+  Scenario: Sell exceeding market capacity shows supply-limit error
+    Given a buy-sell dialog is open for wheat
+    And the player has 5000 bushels of wheat
+    And the wheat demand is 1000
+    And the wheat supply is 0
+    And the dialog mode is set to sell
+    And the dialog input contains "2000"
+    When the player presses enter
+    Then the dialog remains open
+    And a supply-limit error message is displayed
+
+  # -----------------------------------------------------------
+  # Buy Validation — Supply Limited (Demand Limit)
+  # -----------------------------------------------------------
+
+  Scenario: Buy more than available supply shows demand-limit message
+    Given a buy-sell dialog is open for wheat
+    And the player has 50000 gold
+    And wheat costs 10 per bushel
+    And the wheat supply is 3
+    And the dialog mode is set to buy
+    And the dialog input contains "5000"
+    When the player presses enter
+    Then the dialog is closed
+    And a demand-limit message is displayed
+
+  # -----------------------------------------------------------
   # Escape Key Closes Dialog
   # -----------------------------------------------------------
 

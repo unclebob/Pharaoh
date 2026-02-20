@@ -8,6 +8,10 @@
    :next-chat (+ now (long (* 1000 (nb/chat-interval rng))))
    :next-dunning (+ now (long (* 1000 (nb/dunning-interval 1.0))))})
 
+(defn reset-timers [app now]
+  (let [rng (:rng app)]
+    (merge app (init-timers rng now))))
+
 (defn check-idle [app now]
   (if (< now (:next-idle app))
     app

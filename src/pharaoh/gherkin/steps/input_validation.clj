@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [pharaoh.gherkin.steps.helpers :refer [near? assert-near to-double ensure-rng snap]]
             [pharaoh.messages :as msg]
+            [pharaoh.trading :as tr]
             [pharaoh.ui.dialogs :as dlg]
             [pharaoh.ui.input :as inp]))
 
@@ -29,6 +30,18 @@
    {:type :given :pattern #"the dialog mode is set to (.+)"
     :handler (fn [w mode]
                (update w :state dlg/set-dialog-mode (keyword mode)))}
+   {:type :given :pattern #"the player has (\d+) bushels of (.+)"
+    :handler (fn [w amt commodity]
+               (let [k (keyword (str/lower-case commodity))]
+                 (assoc-in w [:state k] (to-double amt))))}
+   {:type :given :pattern #"the (.+) demand is (\d+)"
+    :handler (fn [w commodity amt]
+               (let [k (keyword (str/lower-case commodity))]
+                 (assoc-in w [:state :demand k] (to-double amt))))}
+   {:type :given :pattern #"the (.+) supply is (\d+)"
+    :handler (fn [w commodity amt]
+               (let [k (keyword (str/lower-case commodity))]
+                 (assoc-in w [:state :supply k] (to-double amt))))}
    {:type :given :pattern #"there are input error pools for each dialog category"
     :handler (fn [w] w)}
 
@@ -154,4 +167,45 @@
     :handler (fn [w _]
                (assert (string? (:message (:state w)))
                        "Expected negative input error message")
+               w)}
+   {:type :then :pattern #"the dialog remains open"
+    :handler (fn [w]
+               (assert (some? (get-in w [:state :dialog]))
+                       "Expected dialog to remain open")
+               w)}
+   {:type :then :pattern #"an insufficient funds error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected insufficient funds error message")
+               w)}
+   {:type :then :pattern #"the message includes the max affordable amount of (\d+)"
+    :handler (fn [w expected]
+               (let [m (:message (:state w))]
+                 (assert (and (string? m) (str/includes? m (str (long (to-double expected)))))
+                         (str "Expected message to include " expected " but got: " m)))
+               w)}
+   {:type :then :pattern #"a selling-more error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected selling-more error message")
+               w)}
+   {:type :then :pattern #"a supply-limit error message is displayed"
+    :handler (fn [w]
+               (assert (string? (:message (:state w)))
+                       "Expected supply-limit error message")
+               w)}
+   {:type :then :pattern #"the player's gold is non-negative"
+    :handler (fn [w]
+               (assert (>= (:gold (:state w)) 0)
+                       (str "Expected non-negative gold, got " (:gold (:state w))))
+               w)}
+   {:type :then :pattern #"a demand-limit message is displayed"
+    :handler (fn [w]
+               (let [m (:message (:state w))]
+                 (assert (string? m)
+                         (str "Expected demand-limit message string, got " (pr-str m)))
+                 (assert (some #(let [fmt-pat (clojure.string/replace % "%.0f" "\\d+")]
+                                  (re-find (re-pattern fmt-pat) m))
+                               pharaoh.messages/demand-limit-messages)
+                         (str "Message not from demand-limit pool: " m)))
                w)}])
