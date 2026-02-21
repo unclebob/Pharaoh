@@ -487,14 +487,11 @@ the `saves/` directory by default.
 never reduce your credit limit lower than 5,000,000 gold pieces, and
 the market prices start out in your overwhelming favor. The game
 starts with commodities, overseers, feed rates, and planting already
-configured. Be aware of **ownership costs**: every month you pay
-`land×100 + slaves×10 + horses×5 + oxen×3` gold to maintain your
-holdings, plus overseer salaries and loan interest. If gold goes
-negative, overseers quit. This does not mean the easy level is easy
-to play. It should take you some time to get the hang of how to win.
-But winning is possible if you develop the proper business strategy,
-and are careful. At this level, your wheat production will most likely
-never get high enough to have serious economic effects.
+configured. This does not mean the easy level is easy to play. It
+should take you some time to get the hang of how to win. But winning
+is possible if you develop the proper business strategy, and are
+careful. At this level, your wheat production will most likely never
+get high enough to have serious economic effects.
 
 **Moderate:** Your pyramid must reach 300 ft. The bank can reduce
 your credit limit all the way to 500,000, and the market prices start
@@ -515,6 +512,23 @@ and purchasing powers will have to get so high that they can exert
 overwhelming effects on the local economy. You will be able to exert
 vast control over the market prices. The hard part is keeping your
 business in balance, and keeping the bank happy.
+
+### Ownership Costs
+
+Every month you pay a maintenance cost for your holdings. If your
+gold goes negative before the emergency loan tops it up, your
+overseers quit and demand a raise.
+
+| Asset  | Cost per unit per month |
+|--------|------------------------|
+| Land   | 100 gold / acre        |
+| Slaves | 10 gold / slave        |
+| Horses | 5 gold / horse         |
+| Oxen   | 3 gold / ox            |
+
+These costs are multiplied by a random factor averaging ~1.0 each
+month. In addition you pay overseer salaries (default 300 gold each
+per month) and loan interest (0.5% of outstanding loan per month).
 
 ### Hints
 
